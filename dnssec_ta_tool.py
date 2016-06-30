@@ -30,12 +30,14 @@
 import sys
 import time
 import argparse
+import base64
 import iso8601
 import xmltodict
 import dns.name
 import dns.dnssec
 import dns.rrset
 import dns.rdata
+import dns.rdataset
 import dns.rdataclass
 import dns.resolver
 
@@ -98,23 +100,55 @@ def ds_digest_type_as_text(digest_type):
 def dnskey_from_ds_rrset(ds_rrset):
     """Match current DNSKEY RRset with DS RRset"""
     zone = ds_rrset.name
-    dnskey_rrset = []
+    dnskey_rrset = dns.rrset.RRset(name=zone,
+                                   rdclass=dns.rdataclass.IN,
+                                   rdtype=dns.rdatatype.DNSKEY)
 
-    answers = dns.resolver.query(zone, 'DNSKEY')
+    answer = dns.resolver.query(zone, 'DNSKEY')
 
-    for ds_rdata in ds_rrset:
-        for dnskey_rdata in answers:
-            if dnskey_rdata.flags & 0x0001:
-                dnskey_as_ds = dns.dnssec.make_ds(zone, dnskey_rdata,
-                                                  ds_digest_type_as_text(ds_rdata.digest_type))
-                if dnskey_as_ds == ds_rdata:
-                    print('DNSKEY {} present'.format(ds_rdata.key_tag),
-                          file=sys.stderr)
-                    dnskey_rrset.append(dnskey_rdata)
-                else:
-                    print('DNSKEY {} not present'.format(ds_rdata.key_tag),
-                          file=sys.stderr)
+    for answer_rr in answer.rrset:
+        if answer_rr.rdtype != dns.rdatatype.DNSKEY:
+            continue
+        if not answer_rr.flags & 0x0001:
+            continue
+
+        dnskey_rdata = answer_rr
+
+        for ds_rdata in ds_rrset:
+            dnskey_as_ds = dns.dnssec.make_ds(zone, dnskey_rdata,
+                                              ds_digest_type_as_text(ds_rdata.digest_type))
+            if dnskey_as_ds == ds_rdata:
+                print('DNSKEY {} present'.format(ds_rdata.key_tag),
+                      file=sys.stderr)
+                dnskey_rrset.add(dnskey_rdata)
+            else:
+                print('DNSKEY {} not present'.format(ds_rdata.key_tag),
+                      file=sys.stderr)
     return dnskey_rrset
+
+
+def bind_format_key(format_str, dnskey_rrset):
+    """Format DNSKEY RRset for BIND"""
+    for dnskey_rr in dnskey_rrset:
+        print(format_str.format(dnskey_rrset.name,
+                                dnskey_rr.flags,
+                                dnskey_rr.protocol,
+                                dnskey_rr.algorithm,
+                                base64.b64encode(dnskey_rr.key).decode('utf8')))
+
+
+def bind_trusted_keys(dnskey_rrset):
+    """Output DNSKEY RRset as BIND trusted-keys"""
+    print('trusted-keys {')
+    bind_format_key('  "{}" {} {} {} "{}";', dnskey_rrset)
+    print('};')
+
+
+def bind_managed_keys(dnskey_rrset):
+    """Output DNSKEY RRset as BIND managed-keys"""
+    print('managed-keys {')
+    bind_format_key('  "{}" initial-key {} {} {} "{}";', dnskey_rrset)
+    print('};')
 
 
 def main():
@@ -125,6 +159,10 @@ def main():
                         help='trust anchor file')
     parser.set_defaults(anchors=DEFAULT_ANCHORS)
 
+    parser.add_argument("--format", metavar='format',
+                        help='output format')
+    parser.set_defaults(format='ds')
+
     args = vars(parser.parse_args())
 
     with open(args['anchors']) as anchors_fd:
@@ -134,14 +172,19 @@ def main():
     digests = doc['TrustAnchor']['KeyDigest']
 
     ds_rrset = get_trust_anchors_as_ds(zone, digests)
-    print('Trust Anchor DS candidates:')
-    print(ds_rrset)
-    print('')
 
-    dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
-    print('Trust Anchor DNSKEY candidates:')
-    print(dnskey_rrset)
-    print('')
+    if args['format'] == 'ds':
+        print(ds_rrset)
+    elif args['format'] == 'dnskey':
+        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
+        print(dnskey_rrset)
+    elif args['format'] == 'trusted-keys':
+        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
+        bind_trusted_keys(dnskey_rrset)
+    elif args['format'] == 'managed-keys':
+        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
+        bind_managed_keys(dnskey_rrset)
+
 
 if __name__ == "__main__":
     main()
