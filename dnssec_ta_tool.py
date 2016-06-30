@@ -156,11 +156,11 @@ def main():
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
 
     parser.add_argument("--anchors", metavar='anchors',
-                        help='trust anchor file')
+                        help='trust anchor file (root-anchors.xml)')
     parser.set_defaults(anchors=DEFAULT_ANCHORS)
 
     parser.add_argument("--format", metavar='format',
-                        help='output format')
+                        help='output format (ds|dnskey|trusted|managed)')
     parser.set_defaults(format='ds')
 
     args = vars(parser.parse_args())
@@ -178,10 +178,10 @@ def main():
     elif args['format'] == 'dnskey':
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         print(dnskey_rrset)
-    elif args['format'] == 'trusted-keys':
+    elif args['format'] == 'trusted':
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         bind_trusted_keys(dnskey_rrset)
-    elif args['format'] == 'managed-keys':
+    elif args['format'] == 'managed':
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         bind_managed_keys(dnskey_rrset)
 
