@@ -4,7 +4,7 @@ This repository contains utilities to process DNS trust anchors formatted in XML
 
 ## Example Usage
 
-    python3 dnssec_ta_tool.py --format dnskey
+    python3 dnssec_ta_tool.py --format dnskey --verbose
     python3 dnssec_ta_tool.py --format ds --output trust-anchor-file.conf
     python3 dnssec_ta_tool.py --format bind-managed --output managed-keys.bind
     python3 dnssec_ta_tool.py --format bind-trusted --output trusted-keys.bind
