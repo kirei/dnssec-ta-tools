@@ -16,6 +16,9 @@ virtualenv:
 	virtualenv -p python3 $(VENV)
 	$(VENV)/bin/pip install 
 
+demo: root-anchors.xml
+	python dnssec_ta_tool.py --format dnskey --verbose
+
 root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
 
