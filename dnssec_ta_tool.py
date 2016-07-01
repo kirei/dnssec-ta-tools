@@ -170,7 +170,10 @@ def main():
     zone = doc['TrustAnchor']['Zone']
     digests = doc['TrustAnchor']['KeyDigest']
 
-    ds_rrset = get_trust_anchors_as_ds(zone, digests)
+    if isinstance(digests, list):
+        ds_rrset = get_trust_anchors_as_ds(zone, digests)
+    else:
+        ds_rrset = get_trust_anchors_as_ds(zone, [digests])
 
     if args['format'] == 'ds':
         print(ds_rrset)
