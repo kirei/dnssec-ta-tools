@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrustAnchor id="28EC9E63-013E-4CC9-9747-3BF4854972B1" source="https://github.com/kirei/dnssec-ta-tools/test-anchors.xml">
+<Zone>.</Zone>
+<KeyDigest id="VALID" validFrom="2010-07-15T00:00:00+00:00">
+<KeyTag>19036</KeyTag>
+<Algorithm>8</Algorithm>
+<DigestType>2</DigestType>
+<Digest>49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5</Digest>
+</KeyDigest>
+<KeyDigest id="FUTURE" validFrom="9999-01-01T00:00:00+00:00">
+<KeyTag>1001</KeyTag>
+<Algorithm>8</Algorithm>
+<DigestType>2</DigestType>
+<Digest>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF</Digest>
+</KeyDigest>
+<KeyDigest id="ANCIENT" validUntil="2001-01-01T00:00:00+00:00">
+<KeyTag>1002</KeyTag>
+<Algorithm>8</Algorithm>
+<DigestType>2</DigestType>
+<Digest>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF</Digest>
+</KeyDigest>
+<KeyDigest id="CURRENT" validFrom="2016-01-01T00:00:00+00:00" validUntil="2018-01-01T00:00:00+00:00">
+<KeyTag>1003</KeyTag>
+<Algorithm>8</Algorithm>
+<DigestType>2</DigestType>
+<Digest>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF</Digest>
+</KeyDigest>
+</TrustAnchor>
