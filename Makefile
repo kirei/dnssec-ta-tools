@@ -10,7 +10,7 @@ all:
 	
 lint:
 	pep8 --max-line-length=132 $(SCRIPT)
-	pylint --reports=no $(SCRIPT)
+	pylint --reports=no -d line-too-long $(SCRIPT)
 
 virtualenv:
 	virtualenv -p python3 $(VENV)
