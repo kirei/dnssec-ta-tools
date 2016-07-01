@@ -175,8 +175,8 @@ def main():
     parser.add_argument("--format",
                         metavar='format',
                         default='ds',
-                        choices=['ds', 'dnskey', 'trusted', 'managed'],
-                        help='output format (ds|dnskey|trusted|managed)')
+                        choices=['ds', 'dnskey', 'bind-trusted', 'bind-managed'],
+                        help='output format (ds|dnskey|bind-trusted|bind-managed)')
     parser.add_argument("--output",
                         metavar='filename',
                         help='output file (stdout)')
@@ -205,9 +205,9 @@ def main():
         print(ds_rrset)
     elif args['format'] == 'dnskey':
         print(dnskey_rrset)
-    elif args['format'] == 'trusted':
+    elif args['format'] == 'bind-trusted':
         bind_trusted_keys(dnskey_rrset)
-    elif args['format'] == 'managed':
+    elif args['format'] == 'bind-managed':
         bind_managed_keys(dnskey_rrset)
     else:
         raise Exception('Invalid output format')
