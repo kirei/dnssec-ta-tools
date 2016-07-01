@@ -120,7 +120,7 @@ def dnskey_from_ds_rrset(ds_rrset, verbose):
                                               algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
             if dnskey_as_ds == ds_rdata:
                 if verbose:
-                    emit_warning('DNSKEY {} present'.format(ds_rdata.key_tag))
+                    emit_info('DNSKEY {} present'.format(ds_rdata.key_tag))
                 dnskey_rrset.add(dnskey_rdata)
             else:
                 if verbose:
