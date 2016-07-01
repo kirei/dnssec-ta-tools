@@ -97,7 +97,7 @@ def ds_digest_type_as_text(digest_type):
     return digest_types.get(digest_type)
 
 
-def dnskey_from_ds_rrset(ds_rrset):
+def dnskey_from_ds_rrset(ds_rrset, verbose):
     """Match current DNSKEY RRset with DS RRset"""
     zone = ds_rrset.name
     dnskey_rrset = dns.rrset.RRset(name=zone,
@@ -119,10 +119,12 @@ def dnskey_from_ds_rrset(ds_rrset):
                                               key=dnskey_rdata,
                                               algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
             if dnskey_as_ds == ds_rdata:
-                emit_warning('DNSKEY {} present'.format(ds_rdata.key_tag))
+                if verbose:
+                    emit_warning('DNSKEY {} present'.format(ds_rdata.key_tag))
                 dnskey_rrset.add(dnskey_rdata)
             else:
-                emit_warning('DNSKEY {} not present'.format(ds_rdata.key_tag))
+                if verbose:
+                    emit_warning('DNSKEY {} not present'.format(ds_rdata.key_tag))
     return dnskey_rrset
 
 
@@ -147,7 +149,7 @@ def bind_managed_keys(dnskey_rrset):
     """Output DNSKEY RRset as BIND managed-keys"""
     print('managed-keys {')
     bind_format_key('  "{}" initial-key {} {} {} "{}";', dnskey_rrset)
-    print('};')
+    print('};',)
 
 
 def emit_warning(message):
@@ -175,6 +177,9 @@ def main():
                         default='ds',
                         choices=['ds', 'dnskey', 'trusted', 'managed'],
                         help='output format (ds|dnskey|trusted|managed)')
+    parser.add_argument("--output",
+                        metavar='filename',
+                        help='output file (stdout)')
     args = vars(parser.parse_args())
 
     with open(args['anchors']) as anchors_fd:
@@ -188,19 +193,29 @@ def main():
     else:
         ds_rrset = get_trust_anchors_as_ds(zone, [digests], verbose=args['verbose'])
 
+
+    if args['format'] != 'ds':
+        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset, verbose=args['verbose'])
+
+    if args['output']:
+        output_fd = open(args['output'], 'w')
+        old_stdout = sys.stdout
+        sys.stdout = output_fd
+
     if args['format'] == 'ds':
         print(ds_rrset)
     elif args['format'] == 'dnskey':
-        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         print(dnskey_rrset)
     elif args['format'] == 'trusted':
-        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         bind_trusted_keys(dnskey_rrset)
     elif args['format'] == 'managed':
-        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         bind_managed_keys(dnskey_rrset)
     else:
         raise Exception('Invalid output format')
+
+    if args['output']:
+        sys.stdout = old_stdout
+        output_fd.close()
 
 
 if __name__ == "__main__":
