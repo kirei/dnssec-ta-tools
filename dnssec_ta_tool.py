@@ -166,12 +166,13 @@ def main():
                         action='store_true',
                         help='verbose output')
     parser.add_argument("--anchors",
-                        metavar='anchors',
+                        metavar='filename',
                         default=DEFAULT_ANCHORS,
                         help='trust anchor file (root-anchors.xml)')
     parser.add_argument("--format",
                         metavar='format',
                         default='ds',
+                        choices=['ds', 'dnskey', 'trusted', 'managed'],
                         help='output format (ds|dnskey|trusted|managed)')
     args = vars(parser.parse_args())
 
