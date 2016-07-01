@@ -11,3 +11,7 @@ Root zone Trust Anchors:
 
 - https://www.iana.org/dnssec
 - https://data.iana.org/root-anchors/root-anchors.xml
+
+## TA Validation
+
+Before use, all trust anchors should be validated. Example code for how to do this using OpenSSL is available in the Makefile.
