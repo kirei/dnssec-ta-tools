@@ -58,19 +58,16 @@ def get_trust_anchors_as_ds(zone, digests):
         if '@validFrom' in keydigest:
             valid_from = iso8601.parse_date(keydigest['@validFrom']).timestamp()
             if now < valid_from:
-                print('TA {} ({}) not yet valid'.format(keytag, keydigest_id),
-                      file=sys.stderr)
+                emit_warning('TA {} ({}) not yet valid'.format(keytag, keydigest_id))
                 continue
 
         if '@validUntil' in keydigest:
             valid_until = iso8601.parse_date(keydigest['@validUntil']).timestamp()
             if now > valid_until:
-                print('TA {} ({}) expired'.format(keytag, keydigest_id),
-                      file=sys.stderr)
+                emit_warning('TA {} ({}) expired'.format(keytag, keydigest_id))
                 continue
 
-        print('TA {} ({}) valid'.format(keytag, keydigest_id),
-              file=sys.stderr)
+        emit_warning('TA {} ({}) valid'.format(keytag, keydigest_id))
         valid_ds_rdata.append(ds_rdata_from_keydigest(keydigest))
 
     rrset = dns.rrset.from_rdata_list(dns.name.from_text(zone), 0,
@@ -118,12 +115,10 @@ def dnskey_from_ds_rrset(ds_rrset):
             dnskey_as_ds = dns.dnssec.make_ds(zone, dnskey_rdata,
                                               ds_digest_type_as_text(ds_rdata.digest_type))
             if dnskey_as_ds == ds_rdata:
-                print('DNSKEY {} present'.format(ds_rdata.key_tag),
-                      file=sys.stderr)
+                emit_warning('DNSKEY {} present'.format(ds_rdata.key_tag))
                 dnskey_rrset.add(dnskey_rdata)
             else:
-                print('DNSKEY {} not present'.format(ds_rdata.key_tag),
-                      file=sys.stderr)
+                emit_warning('DNSKEY {} not present'.format(ds_rdata.key_tag))
     return(dnskey_rrset)
 
 
@@ -149,6 +144,11 @@ def bind_managed_keys(dnskey_rrset):
     print('managed-keys {')
     bind_format_key('  "{}" initial-key {} {} {} "{}";', dnskey_rrset)
     print('};')
+
+
+def emit_warning(message):
+    """Emit warning message on stderr"""
+    print('WARNING: {}'.format(message), file=sys.stderr)
 
 
 def main():
