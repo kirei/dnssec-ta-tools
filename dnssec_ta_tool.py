@@ -44,7 +44,7 @@ import dns.rrset
 DEFAULT_ANCHORS = 'root-anchors.xml'
 
 
-def get_trust_anchors_as_ds(zone, digests):
+def get_trust_anchors_as_ds(zone, digests, verbose):
     """Get currently valid Trust Anchors as DS RRset"""
 
     now = time.time()
@@ -58,16 +58,19 @@ def get_trust_anchors_as_ds(zone, digests):
         if '@validFrom' in keydigest:
             valid_from = iso8601.parse_date(keydigest['@validFrom']).timestamp()
             if now < valid_from:
-                emit_warning('TA {} ({}) not yet valid'.format(keytag, keydigest_id))
+                if verbose:
+                    emit_warning('TA {} ({}) not yet valid'.format(keytag, keydigest_id))
                 continue
 
         if '@validUntil' in keydigest:
             valid_until = iso8601.parse_date(keydigest['@validUntil']).timestamp()
             if now > valid_until:
-                emit_warning('TA {} ({}) expired'.format(keytag, keydigest_id))
+                if verbose:
+                    emit_warning('TA {} ({}) expired'.format(keytag, keydigest_id))
                 continue
 
-        emit_warning('TA {} ({}) valid'.format(keytag, keydigest_id))
+        if verbose:
+            emit_info('TA {} ({}) valid'.format(keytag, keydigest_id))
         valid_ds_rdata.append(ds_rdata_from_keydigest(keydigest))
 
     rrset = dns.rrset.from_rdata_list(dns.name.from_text(zone), 0,
@@ -151,9 +154,17 @@ def emit_warning(message):
     print('WARNING: {}'.format(message), file=sys.stderr)
 
 
+def emit_info(message):
+    """Emit informational message on stderr"""
+    print('NOTICE: {}'.format(message), file=sys.stderr)
+
+
 def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
+    parser.add_argument("--verbose",
+                        action='store_true',
+                        help='verbose output')
     parser.add_argument("--anchors",
                         metavar='anchors',
                         default=DEFAULT_ANCHORS,
@@ -171,9 +182,9 @@ def main():
     digests = doc['TrustAnchor']['KeyDigest']
 
     if isinstance(digests, list):
-        ds_rrset = get_trust_anchors_as_ds(zone, digests)
+        ds_rrset = get_trust_anchors_as_ds(zone, digests, verbose=args['verbose'])
     else:
-        ds_rrset = get_trust_anchors_as_ds(zone, [digests])
+        ds_rrset = get_trust_anchors_as_ds(zone, [digests], verbose=args['verbose'])
 
     if args['format'] == 'ds':
         print(ds_rrset)
