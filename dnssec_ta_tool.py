@@ -155,13 +155,15 @@ def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
 
-    parser.add_argument("--anchors", metavar='anchors',
+    parser.add_argument("--anchors",
+                        metavar='anchors',
+                        default=DEFAULT_ANCHORS,
                         help='trust anchor file (root-anchors.xml)')
-    parser.set_defaults(anchors=DEFAULT_ANCHORS)
 
-    parser.add_argument("--format", metavar='format',
+    parser.add_argument("--format",
+                        metavar='format',
+                        default='ds',
                         help='output format (ds|dnskey|trusted|managed)')
-    parser.set_defaults(format='ds')
 
     args = vars(parser.parse_args())
 
