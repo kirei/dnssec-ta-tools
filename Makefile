@@ -3,6 +3,8 @@ SCRIPT=		dnssec_ta_tool.py
 VENV=		env
 MODULES=	pylint iso8601 xmltodict dnspython
 
+TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem
+
 
 all:
 	
@@ -27,3 +29,6 @@ root-anchors.xml: root-anchors.p7s icannbundle.pem
 		-in root-anchors.p7s -out /dev/null \
 		-content root-anchors.tmp
 	mv root-anchors.tmp $@
+
+clean:
+	rm -f $(TMPFILES)
