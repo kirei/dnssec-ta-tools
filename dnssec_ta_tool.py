@@ -91,7 +91,7 @@ def ds_digest_type_as_text(digest_type):
         1: 'SHA1',
         2: 'SHA256'
     }
-    return(digest_types.get(digest_type, 'UNKNOWN'))
+    return(digest_types.get(digest_type))
 
 
 def dnskey_from_ds_rrset(ds_rrset):
