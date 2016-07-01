@@ -183,6 +183,8 @@ def main():
     elif args['format'] == 'managed':
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset)
         bind_managed_keys(dnskey_rrset)
+    else:
+        raise Exception('Invalid output format')
 
 
 if __name__ == "__main__":
