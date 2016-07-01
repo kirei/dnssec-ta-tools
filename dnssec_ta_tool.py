@@ -115,8 +115,9 @@ def dnskey_from_ds_rrset(ds_rrset):
         dnskey_rdata = answer_rr
 
         for ds_rdata in ds_rrset:
-            dnskey_as_ds = dns.dnssec.make_ds(zone, dnskey_rdata,
-                                              ds_digest_type_as_text(ds_rdata.digest_type))
+            dnskey_as_ds = dns.dnssec.make_ds(name=zone,
+                                              key=dnskey_rdata,
+                                              algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
             if dnskey_as_ds == ds_rdata:
                 emit_warning('DNSKEY {} present'.format(ds_rdata.key_tag))
                 dnskey_rrset.add(dnskey_rdata)
