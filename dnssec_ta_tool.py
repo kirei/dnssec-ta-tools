@@ -75,7 +75,7 @@ def get_trust_anchors_as_ds(zone, digests, verbose):
 
     rrset = dns.rrset.from_rdata_list(dns.name.from_text(zone), 0,
                                       valid_ds_rdata)
-    return(rrset)
+    return rrset
 
 
 def ds_rdata_from_keydigest(keydigest):
@@ -85,7 +85,7 @@ def ds_rdata_from_keydigest(keydigest):
     digest_type = keydigest['DigestType']
     digest = keydigest['Digest']
     rdata_text = '{} {} {} {}'.format(keytag, algorithm, digest_type, digest)
-    return(dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.DS, rdata_text))
+    return dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.DS, rdata_text)
 
 
 def ds_digest_type_as_text(digest_type):
@@ -94,7 +94,7 @@ def ds_digest_type_as_text(digest_type):
         1: 'SHA1',
         2: 'SHA256'
     }
-    return(digest_types.get(digest_type))
+    return digest_types.get(digest_type)
 
 
 def dnskey_from_ds_rrset(ds_rrset):
@@ -122,7 +122,7 @@ def dnskey_from_ds_rrset(ds_rrset):
                 dnskey_rrset.add(dnskey_rdata)
             else:
                 emit_warning('DNSKEY {} not present'.format(ds_rdata.key_tag))
-    return(dnskey_rrset)
+    return dnskey_rrset
 
 
 def bind_format_key(format_str, dnskey_rrset):
