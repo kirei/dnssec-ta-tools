@@ -193,7 +193,6 @@ def main():
     else:
         ds_rrset = get_trust_anchors_as_ds(zone, [digests], verbose=args['verbose'])
 
-
     if args['format'] != 'ds':
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset, verbose=args['verbose'])
 
