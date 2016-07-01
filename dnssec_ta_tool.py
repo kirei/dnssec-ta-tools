@@ -33,13 +33,13 @@ import argparse
 import base64
 import iso8601
 import xmltodict
-import dns.name
 import dns.dnssec
-import dns.rrset
+import dns.name
 import dns.rdata
-import dns.rdataset
 import dns.rdataclass
+import dns.rdataset
 import dns.resolver
+import dns.rrset
 
 DEFAULT_ANCHORS = 'root-anchors.xml'
 
