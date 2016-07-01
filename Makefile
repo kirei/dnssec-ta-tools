@@ -23,7 +23,7 @@ root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
 
 icannbundle.pem:
-	curl -o $@ http://data.iana.org/root-anchors/icannbundle.pem
+	curl -o $@ https://data.iana.org/root-anchors/icannbundle.pem
 
 root-anchors.xml: root-anchors.p7s icannbundle.pem
 	curl -o root-anchors.tmp https://data.iana.org/root-anchors/root-anchors.xml
