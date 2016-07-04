@@ -162,6 +162,26 @@ def emit_info(message):
     print('NOTICE: {}'.format(message), file=sys.stderr)
 
 
+def print_ds_rrset_without_ttl(ds_rrset):
+    """Print DS RRset without TTL"""
+    for ds_rr in ds_rrset:
+        print('{} DS {} {} {} {}'.format(ds_rrset.name,
+                                         ds_rr.key_tag,
+                                         ds_rr.algorithm,
+                                         ds_rr.digest_type,
+                                         base64.b64encode(ds_rr.digest).decode('utf8')))
+
+
+def print_dnskey_rrset_without_ttl(dnskey_rrset):
+    """Print DNSKEY RRset without TTL"""
+    for dnskey_rr in dnskey_rrset:
+        print('{} DNSKEY {} {} {} {}'.format(dnskey_rrset.name,
+                                             dnskey_rr.flags,
+                                             dnskey_rr.protocol,
+                                             dnskey_rr.algorithm,
+                                             base64.b64encode(dnskey_rr.key).decode('utf8')))
+
+
 def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
@@ -202,9 +222,9 @@ def main():
         sys.stdout = output_fd
 
     if args['format'] == 'ds':
-        print(ds_rrset)
+        print_ds_rrset_without_ttl(ds_rrset)
     elif args['format'] == 'dnskey':
-        print(dnskey_rrset)
+        print_dnskey_rrset_without_ttl(dnskey_rrset)
     elif args['format'] == 'bind-trusted':
         bind_trusted_keys(dnskey_rrset)
     elif args['format'] == 'bind-managed':
