@@ -20,6 +20,9 @@ $(VENV):
 demo: $(VENV) root-anchors.xml
 	$(VENV)/bin/python dnssec_ta_tool.py --format dnskey --verbose
 
+test: $(VENV)
+	$(VENV)/bin/python dnssec_ta_tool.py --anchors test-anchors.xml --format dnskey --verbose
+
 root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
 
