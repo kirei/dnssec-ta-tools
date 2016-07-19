@@ -15,7 +15,7 @@ lint:
 
 virtualenv:
 	virtualenv -p python3 $(VENV)
-	$(VENV)/bin/pip install 
+	$(VENV)/bin/pip install $(MODULES)
 
 demo: root-anchors.xml
 	python dnssec_ta_tool.py --format dnskey --verbose
