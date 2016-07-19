@@ -5,6 +5,7 @@ MODULES=	pylint iso8601 xmltodict dnspython
 
 TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem
 
+CSR=		Kjqmt7v.csr
 
 all:
 	
@@ -32,6 +33,11 @@ root-anchors.xml: root-anchors.p7s icannbundle.pem
 		-in root-anchors.p7s -out /dev/null \
 		-content root-anchors.tmp
 	mv root-anchors.tmp $@
+
+csr: $(CSR)
+
+Kjqmt7v.csr:
+	curl -o $@ http://data.iana.org/root-anchors/Kjqmt7v.csr
 
 clean:
 	rm -f $(TMPFILES)
