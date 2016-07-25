@@ -1,7 +1,7 @@
-SCRIPT=		dnssec_ta_tool.py
+SCRIPT=		dnssec_ta_tool.py csr2dnskey.py
 
 VENV=		env
-MODULES=	pylint iso8601 xmltodict dnspython
+MODULES=	pylint iso8601 xmltodict dnspython pyOpenSSL pyCrypto
 
 TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem
 
