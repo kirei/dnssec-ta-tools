@@ -37,7 +37,6 @@ import OpenSSL.crypto
 from OpenSSL.crypto import load_certificate_request, dump_publickey, FILETYPE_ASN1
 from Crypto.PublicKey import RSA
 import Crypto.Util.number
-import pprint
 
 RR_OID = "1.3.6.1.4.1.1000.53"
 
@@ -47,31 +46,32 @@ def get_ds_rdata(x509name):
     components = dict(x509name.get_components())
     ds_pattern = re.compile("^(.+) IN DS (.+)$")
     for attr, value in components.items():
-            decoded_value = value.decode('UTF-8')
-            match = ds_pattern.match(decoded_value)
-            if match:
-                origin_str = match.group(1)
-                rdata_str = match.group(2)
-                rdata = dns.rdata.from_text(rdclass=dns.rdataclass.IN,
-                                            rdtype=dns.rdatatype.DS,
-                                            tok=rdata_str)
-                return (origin_str, rdata)
+        decoded_value = value.decode('UTF-8')
+        match = ds_pattern.match(decoded_value)
+        if match:
+            origin_str = match.group(1)
+            rdata_str = match.group(2)
+            rdata = dns.rdata.from_text(rdclass=dns.rdataclass.IN,
+                                        rdtype=dns.rdatatype.DS,
+                                        tok=rdata_str)                
+            return (origin_str, rdata)
 
 
 def get_algo_class_from_ds(ds_rdata):
     """Get algorithm class from DS rdata"""
     if (ds_rdata.algorithm == dns.dnssec.RSAMD5 or
-        ds_rdata.algorithm == dns.dnssec.RSASHA1 or
-        ds_rdata.algorithm == dns.dnssec.RSASHA1NSEC3SHA1 or
-        ds_rdata.algorithm == dns.dnssec.RSASHA256 or
-        ds_rdata.algorithm == dns.dnssec.RSASHA512):
+            ds_rdata.algorithm == dns.dnssec.RSASHA1 or
+            ds_rdata.algorithm == dns.dnssec.RSASHA1NSEC3SHA1 or
+            ds_rdata.algorithm == dns.dnssec.RSASHA256 or
+            ds_rdata.algorithm == dns.dnssec.RSASHA512):
         return 'RSA'
     if (ds_rdata.algorithm == dns.dnssec.DSA or
-        ds_rdata.algorithm == dns.dnssec.DSANSEC3SHA1):
+            ds_rdata.algorithm == dns.dnssec.DSANSEC3SHA1):
         return 'DSA'
     if (ds_rdata.algorithm == dns.dnssec.ECDSAP256SHA256 or
-        ds_rdata.algorithm == dns.dnssec.ECDSAP384SHA384):
+            ds_rdata.algorithm == dns.dnssec.ECDSAP384SHA384):
         return 'ECDSA'
+    raise Exception('Unsupported DS algorithm family')
 
 
 def ds_digest_type_as_text(digest_type):
@@ -126,6 +126,8 @@ def main():
         dnskey_as_ds = dns.dnssec.make_ds(name=ds_origin,
                                           key=dnskey_rdata,
                                           algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
+    else:
+        raise Exception('Unsupported public key algorithm')
 
     if args['output']:
         output_fd = open(args['output'], 'w')
