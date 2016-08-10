@@ -56,7 +56,7 @@ except:
 # Convert bytes that are in ASCII into strings.
 #   This is used for content received over URLs.
 def BytesToString(ByteArray):
-	if type(ByteArray) == str:
+	if isinstance(ByteArray, str):
 		return(str(ByteArray))
 	ASCIICodec = codecs.lookup("ascii")
 	return(ASCIICodec.decode(ByteArray)[0])
@@ -73,7 +73,7 @@ def WriteOutFile(FileName, FileContents):
 		except:
 			Die("Failed to rename {} to {}.".format(FileName, NowString+FileName))
 	# Pick the mode string based on the type of contents
-	if type(FileContents) == str:
+	if isinstance(FileContents, str):
 		Mode = "wt"
 	else:
 		Mode = "wb"
@@ -96,8 +96,8 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 		Die("A DNSKEY dict had a hash type of {}, which is unknown.".format(HashType))
 	DigestContent = bytearray()
 	DigestContent.append(0)  # Name of the zone, expressed in wire format
-	DigestContent.extend(struct.pack("!HBB", int(ThisKSKRecord["f"]),\
-		int(ThisKSKRecord["p"]), int(ThisKSKRecord["a"])))
+	DigestContent.extend(struct.pack("!HBB", int(DNSKEYdict["f"]),\
+		int(DNSKEYdict["p"]), int(DNSKEYdict["a"])))
 	DigestContent.extend(KeyBytes)
 	ThisHash.update(DigestContent)
 	return((ThisHash.hexdigest()).upper())
@@ -106,7 +106,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 ### https://dns.google.com/resolve?name=.&type=dnskey
 
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
-CmdParse.add_argument("--local", dest="Local", type=str,
+CmdParse.add_argument("--local", dest="Local", type=str,\
 	help="Name of local file to use instead of getting the trust anchor from the URL")
 Opts = CmdParse.parse_args()
 
@@ -191,8 +191,8 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 		Die("Could not find the 'openssl' command on this system.")
 	# Run openssl to validate the signature
 	ValidateCommand = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
-	ValidatePopen = subprocess.Popen(ValidateCommand.format(
-		ca=ICANNCAFileName, sig=SignatureFileName, cont=TrustAnchorFileName),
+	ValidatePopen = subprocess.Popen(ValidateCommand.format(\
+		ca=ICANNCAFileName, sig=SignatureFileName, cont=TrustAnchorFileName),\
 		shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(ValidOut, ValidErr) = ValidatePopen.communicate()
 	if ValidatePopen.returncode != 0:
@@ -201,7 +201,7 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 	else:
 		print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
 			sig=SignatureFileName, cont=TrustAnchorFileName))
-	
+
 ### Step 4. Extract the trust anchor key digests from the trust anchor file
 # Turn the bytes from TrustAnchorXML into a string
 TrustAnchorXMLString = BytesToString(TrustAnchorXML)
@@ -224,13 +224,13 @@ TrustAnchors = []  # Global list of dicts that is taken from the XML file
 # Collect the values for the KeyDigest subelements and attributes
 for (Count, ThisDigestElement) in enumerate(DigestElements):
 	DigestValueDict = {}
-	for ThisSubElement in [ "KeyTag", "Algorithm", "DigestType", "Digest" ]:
+	for ThisSubElement in ["KeyTag", "Algorithm", "DigestType", "Digest"]:
 		try:
 			ThisKeyTagText = (ThisDigestElement.find(ThisSubElement)).text
 		except:
 			Die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
 		DigestValueDict[ThisSubElement] = ThisKeyTagText
-	for ThisAttribute in [ "validFrom", "validUntil" ] :
+	for ThisAttribute in ["validFrom", "validUntil"]:
 		if ThisAttribute in ThisDigestElement.keys():
 			DigestValueDict[ThisAttribute] = ThisDigestElement.attrib[ThisAttribute]
 		else:
@@ -292,14 +292,13 @@ KSKRecords = []
 for ThisRootZoneLine in RootZoneContents.splitlines():
 	ThisRootZoneLine = BytesToString(ThisRootZoneLine)
 	if "DNSKEY\t257" in ThisRootZoneLine:
-		(Dot, TTL, IN, DNSKEY, Flags, Proto, Alg, KeyAsBase64) = re.split("\s+", ThisRootZoneLine)
+		(Dot, TTL, IN, DNSKEY, Flags, Proto, Alg, KeyAsBase64) = re.split(r"\s+", ThisRootZoneLine)
 		print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
 			flags=Flags, proto=Proto, alg=Alg, keystart=KeyAsBase64[0:15], keyend=KeyAsBase64[-15:]))
 		KSKRecords.append({"t": TTL, "f": Flags, "p": Proto, "a": Alg, "k": KeyAsBase64})
 if len(KSKRecords) == 0:
 	Die("Did not find any KSKs in the root zone file.")
 # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
-
 MatchedKSKs = []
 for ThisKSKRecord in KSKRecords:
 	try:
@@ -333,8 +332,7 @@ for ThisMatchedKSK in MatchedKSKs:
 		int(ThisMatchedKSK["a"])))
 	TagBase.extend(KeyBytes)
 	Accumulator = 0
-	for Counter in range(len(TagBase)):
-		ThisByte = TagBase[Counter]
+	for (Counter, ThisByte) in enumerate(TagBase):
 		if (Counter % 2) == 0:
 			Accumulator += (ThisByte << 8)
 		else:
