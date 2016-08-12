@@ -1,6 +1,6 @@
 SCRIPT=		dnssec_ta_tool.py csr2dnskey.py
 
-VENV=		env
+VENV=		venv
 MODULES=	pylint iso8601 xmltodict dnspython pyOpenSSL pyCrypto
 
 TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem
@@ -13,12 +13,15 @@ lint:
 	pep8 --max-line-length=132 $(SCRIPT)
 	pylint --reports=no -d line-too-long $(SCRIPT)
 
-virtualenv:
+$(VENV):
 	virtualenv -p python3 $(VENV)
 	$(VENV)/bin/pip install $(MODULES)
 
-demo: root-anchors.xml
-	python dnssec_ta_tool.py --format dnskey --verbose
+demo: $(VENV) root-anchors.xml
+	$(VENV)/bin/python dnssec_ta_tool.py --format dnskey --verbose
+
+test: $(VENV)
+	$(VENV)/bin/python dnssec_ta_tool.py --anchors test-anchors.xml --format dnskey --verbose
 
 root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
@@ -41,3 +44,4 @@ Kjqmt7v.csr:
 
 clean:
 	rm -f $(TMPFILES)
+	rm -rf $(VENV)
