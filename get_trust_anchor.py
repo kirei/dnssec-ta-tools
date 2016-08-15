@@ -52,6 +52,11 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 -----END CERTIFICATE-----
 '''
 
+URL_ROOT_ANCHORS           = "https://data.iana.org/root-anchors/root-anchors.xml"
+URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
+URL_ROOT_ZONE              = "https://www.internic.net/domain/root.zone"
+
+
 import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
 import pprint, re, hashlib, struct, argparse
 
@@ -135,10 +140,6 @@ CmdParse.add_argument("--local", dest="Local", type=str,\
     help="Name of local file to use instead of getting the trust anchor from the URL")
 Opts = CmdParse.parse_args()
 
-URLForRootAnchors = "https://data.iana.org/root-anchors/root-anchors.xml"
-URLForRootAnchorsSignature = "https://data.iana.org/root-anchors/root-anchors.p7s"
-URLForRootZone = "https://www.internic.net/domain/root.zone"
-
 NowDateTime = datetime.datetime.now()
 # Date string used for backup file names
 NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
@@ -162,10 +163,10 @@ if Opts.Local:
 else:
     # Get the trust anchr file from its URL, write it to disk
     try:
-        TrustAnchorURL = urlopen(URLForRootAnchors)
+        TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
     except Exception as e:
         Die("Was not able to open URL {}. The returned text was '{}'.".format(\
-            URLForRootAnchors, e))
+            URL_ROOT_ANCHORS, e))
     TrustAnchorXML = TrustAnchorURL.read()
     TrustAnchorURL.close()
 WriteOutFile(TrustAnchorFileName, TrustAnchorXML)
@@ -173,10 +174,10 @@ WriteOutFile(TrustAnchorFileName, TrustAnchorXML)
 ### Step 2. Fetch the S/MIME signature for the trust anchor file from IANA using HTTPS
 # Get the signature file from its URL, write it to disk
 try:
-    SignatureURL = urlopen(URLForRootAnchorsSignature)
+    SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
 except Exception as e:
     Die("Was not able to open URL {}. returned text was '{}'.".format(\
-        URLForRootAnchorsSignature, e))
+        URL_ROOT_ANCHORS_SIGNATURE, e))
 SignatureContents = SignatureURL.read()
 SignatureURL.close()
 WriteOutFile(SignatureFileName, SignatureContents)
@@ -283,7 +284,7 @@ print("After the date validity checks, there are now {} records.".format(len(Val
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
 # Get the rootzone from its URL, write it to disk
 try:
-    RootZoneURL = urlopen(URLForRootZone)
+    RootZoneURL = urlopen(URL_ROOT_ZONE)
 except Exception as e:
     Die("Was not able to open URL {}. The returned text was '{}'.".format(RootZoneURL, e))
 RootZoneContents = RootZoneURL.read()
