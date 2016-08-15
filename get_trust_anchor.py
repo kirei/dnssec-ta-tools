@@ -28,6 +28,11 @@ from __future__ import print_function
 
 ##############################
 
+
+import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
+import pprint, re, hashlib, struct, argparse
+
+
 ICANN_ROOT_CA_CERT = '''
 -----BEGIN CERTIFICATE-----
 MIIDdzCCAl+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBdMQ4wDAYDVQQKEwVJQ0FO
@@ -52,13 +57,10 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 -----END CERTIFICATE-----
 '''
 
-URL_ROOT_ANCHORS           = "https://data.iana.org/root-anchors/root-anchors.xml"
+URL_ROOT_ANCHORS = "https://data.iana.org/root-anchors/root-anchors.xml"
 URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
-URL_ROOT_ZONE              = "https://www.internic.net/domain/root.zone"
+URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
 
-
-import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
-import pprint, re, hashlib, struct, argparse
 
 def Die(*Strings):
     """Generic way to leave the program early"""
