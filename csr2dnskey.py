@@ -33,7 +33,6 @@ import re
 import base64
 import dns.dnssec
 import dns.rdata
-import OpenSSL.crypto
 from OpenSSL.crypto import load_certificate_request, dump_publickey, FILETYPE_ASN1
 from Crypto.PublicKey import RSA
 import Crypto.Util.number
@@ -53,7 +52,7 @@ def get_ds_rdata(x509name):
             rdata_str = match.group(2)
             rdata = dns.rdata.from_text(rdclass=dns.rdataclass.IN,
                                         rdtype=dns.rdatatype.DS,
-                                        tok=rdata_str)                
+                                        tok=rdata_str)
             return (origin_str, rdata)
 
 
