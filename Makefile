@@ -10,7 +10,7 @@ CSR=		Kjqmt7v.csr
 all:
 	
 lint:
-	pep8 --max-line-length=132 $(SCRIPT)
+	#pep8 --max-line-length=132 $(SCRIPT)
 	pylint --reports=no -d line-too-long $(SCRIPT)
 
 $(VENV):
