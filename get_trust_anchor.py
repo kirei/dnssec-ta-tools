@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 """
 DNSSEC Trust Anchor Tool
@@ -20,6 +19,8 @@ Note that the validation is done against a built-in ICANN CA, not one retrieved 
 URL. This means that even if HTTPS authentication checking isn't done, the resulting
 trust anchors are still cryptographically validated.
 """
+
+from __future__ import print_function
 
 ################# Still to do:
 
