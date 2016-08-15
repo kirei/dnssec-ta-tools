@@ -123,7 +123,7 @@ def WriteOutFile(FileName, FileContents):
 
 
 def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
-    """Takes a DNSKEY dict and hash type (int), and returns the hex of the hash"""
+    """Takes a DNSKEY dict and hash type (string), and returns the hex of the hash"""
     if HashType == "1":
         ThisHash = hashlib.sha1()
     elif HashType == "2":
@@ -138,9 +138,6 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
     ThisHash.update(DigestContent)
     return (ThisHash.hexdigest()).upper()
 
-
-### Will be useful if we want to query the root zone instead of pulling the root zone file
-### https://dns.google.com/resolve?name=.&type=dnskey
 
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
 CmdParse.add_argument("--local", dest="Local", type=str,\
@@ -289,6 +286,8 @@ if len(ValidTrustAnchors) == 0:
 print("After the date validity checks, there are now {} records.".format(len(ValidTrustAnchors)))
 
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
+### Will be useful if we want to query the root zone instead of pulling the root zone file
+### https://dns.google.com/resolve?name=.&type=dnskey
 # Get the rootzone from its URL, write it to disk
 try:
     RootZoneURL = urlopen(URL_ROOT_ZONE)
