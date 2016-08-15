@@ -60,8 +60,8 @@ URL_ROOT_ZONE              = "https://www.internic.net/domain/root.zone"
 import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
 import pprint, re, hashlib, struct, argparse
 
-# Generic way to leave the program early
 def Die(*Strings):
+    """Generic way to leave the program early"""
     sys.stderr.write("".join(Strings) + " Exiting.\n")
     exit()
 
@@ -83,17 +83,20 @@ except:
     except:
         Die("Was not able to import StringIO from Python 2 or 3.")
 
-# Convert bytes that are in ASCII into strings.
-#   This is used for content received over URLs.
+
 def BytesToString(ByteArray):
+    """Convert bytes that are in ASCII into strings.
+    This is used for content received over URLs."""
     if isinstance(ByteArray, str):
         return str(ByteArray)
     ASCIICodec = codecs.lookup("ascii")
     return ASCIICodec.decode(ByteArray)[0]
 
-# Write out a file that we got from a URL or string. Back up the file if it exists.
-#   There is no return value.
+
 def WriteOutFile(FileName, FileContents):
+    """Write out a file that we got from a URL or string.
+    Back up the file if it exists.
+    There is no return value."""
     # Back up the current one if it is there
     if os.path.exists(FileName):
         try:
@@ -116,8 +119,9 @@ def WriteOutFile(FileName, FileContents):
         Die("Could not write out the file {}.".format(FileName))
     return
 
-# Takes a DNSKEY dict and hash type (int), and returns the hex of the hash
+
 def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
+    """Takes a DNSKEY dict and hash type (int), and returns the hex of the hash"""
     if HashType == "1":
         ThisHash = hashlib.sha1()
     elif HashType == "2":
@@ -131,6 +135,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
     DigestContent.extend(KeyBytes)
     ThisHash.update(DigestContent)
     return (ThisHash.hexdigest()).upper()
+
 
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
 ### https://dns.google.com/resolve?name=.&type=dnskey
