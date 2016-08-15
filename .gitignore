@@ -1,3 +1,7 @@
-icannbundle.pem
+backed-up-at*
+icann*.pem
+icann.pem
+ksk-as-*.txt
+root.zone
 root-anchors.*
 venv
