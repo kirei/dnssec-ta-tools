@@ -3,7 +3,9 @@ SCRIPT=		dnssec_ta_tool.py csr2dnskey.py
 VENV=		venv
 MODULES=	pylint iso8601 xmltodict dnspython pyOpenSSL pyCrypto
 
-TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem
+TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem \
+		icanncacert.pem \
+		ksk-as-dnskey.txt ksk-as-ds.txt root.zone
 
 CSR=		Kjqmt7v.csr
 
@@ -42,6 +44,10 @@ csr: $(CSR)
 Kjqmt7v.csr:
 	curl -o $@ http://data.iana.org/root-anchors/Kjqmt7v.csr
 
+realclean: clean
+	rm -rf $(VENV)
+
 clean:
 	rm -f $(TMPFILES)
-	rm -rf $(VENV)
+	rm -f $(CSR)
+	rm -f backed-up-at-*
