@@ -57,9 +57,9 @@ except:
 #   This is used for content received over URLs.
 def BytesToString(ByteArray):
     if isinstance(ByteArray, str):
-        return(str(ByteArray))
+        return str(ByteArray)
     ASCIICodec = codecs.lookup("ascii")
-    return(ASCIICodec.decode(ByteArray)[0])
+    return ASCIICodec.decode(ByteArray)[0]
 
 # Write out a file that we got from a URL or string. Back up the file if it exists.
 #   There is no return value.
@@ -84,7 +84,7 @@ def WriteOutFile(FileName, FileContents):
         print("Saved file {}, length {}.".format(FileName, len(FileContents)))
     except:
         Die("Could not write out the file {}.".format(FileName))
-    return()
+    return
 
 # Takes a DNSKEY dict and hash type (int), and returns the hex of the hash
 def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
@@ -100,7 +100,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
         int(DNSKEYdict["p"]), int(DNSKEYdict["a"])))
     DigestContent.extend(KeyBytes)
     ThisHash.update(DigestContent)
-    return((ThisHash.hexdigest()).upper())
+    return (ThisHash.hexdigest()).upper()
 
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
 ### https://dns.google.com/resolve?name=.&type=dnskey
