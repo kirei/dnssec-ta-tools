@@ -333,7 +333,7 @@ try:
 except:
     Die("Did not find any KSKs.")
 for key in KSKRecords:
-    print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
+    print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
         flags=key['f'], proto=key['p'], alg=key['a'],
         keystart=key['k'][0:15], keyend=key['k'][-15:]))
 # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
