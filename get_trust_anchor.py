@@ -187,7 +187,6 @@ NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
 TrustAnchorFileName = "root-anchors.xml"
 SignatureFileName = "root-anchors.p7s"
 ICANNCAFileName = "icanncacert.pem"
-RootZoneFileName = "root.zone"
 DNSKEYRecordFileName = "ksk-as-dnskey.txt"
 DSRecordFileName = "ksk-as-ds.txt"
 
