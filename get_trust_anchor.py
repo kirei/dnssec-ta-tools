@@ -143,11 +143,16 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 def fetch_ksk():
     try:
         print("Fetching via Google Public DNS...")
-        ksk = fetch_ksk_from_google()
+        ksks = fetch_ksk_from_google()
     except:
-        print("Fetching via root zone file...")
-        ksk = fetch_ksk_from_zonefile()
-    return ksk
+        try:
+            print("Fetching via Google Public DNS failed - trying root zone file...")
+            ksks = fetch_ksk_from_zonefile()
+        except:
+            raise Exception("All methods to fetch KSKs failed")
+    if len(ksks) == 0:
+        raise Exception("No KSKs found")
+    return ksks
 
 
 def fetch_ksk_from_google():
@@ -323,13 +328,14 @@ print("After the date validity checks, there are now {} records.".format(len(Val
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
 # Get all DNSKEY KSKs
-KSKRecords = fetch_ksk()
+try:
+    KSKRecords = fetch_ksk()
+except:
+    Die("Did not find any KSKs.")
 for key in KSKRecords:
     print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
         flags=key['f'], proto=key['p'], alg=key['a'],
         keystart=key['k'][0:15], keyend=key['k'][-15:]))
-if len(KSKRecords) == 0:
-    Die("Did not find any KSKs in the root zone file.")
 # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
 MatchedKSKs = []
 for ThisKSKRecord in KSKRecords:
