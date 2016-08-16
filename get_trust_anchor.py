@@ -323,8 +323,7 @@ print("After the date validity checks, there are now {} records.".format(len(Val
 
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
-### https://dns.google.com/resolve?name=.&type=dnskey
-# Get the rootzone from its URL, write it to disk
+# Get all DNSKEY KSKs
 KSKRecords = fetch_ksk()
 for key in KSKRecords:
     print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
