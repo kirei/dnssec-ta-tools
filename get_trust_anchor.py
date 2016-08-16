@@ -30,7 +30,7 @@ from __future__ import print_function
 
 
 import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
-import pprint, re, hashlib, struct, argparse
+import pprint, re, hashlib, struct, argparse, json
 
 
 ICANN_ROOT_CA_CERT = '''
@@ -60,6 +60,7 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 URL_ROOT_ANCHORS = "https://data.iana.org/root-anchors/root-anchors.xml"
 URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
 URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
+URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
 
 def Die(*Strings):
@@ -137,6 +138,41 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
     DigestContent.extend(KeyBytes)
     ThisHash.update(DigestContent)
     return (ThisHash.hexdigest()).upper()
+
+
+def fetch_ksk():
+    try:
+        print("Fetching via Google Public DNS...")
+        ksk = fetch_ksk_from_google()
+    except:
+        print("Fetching via root zone file...")
+        ksk = fetch_ksk_from_zonefile()
+    return ksk
+
+
+def fetch_ksk_from_google():
+    """Fetch root KSK via Google Public DNS"""
+    ksks = []
+    url = urlopen(URL_RESOLVER_API)
+    data = json.loads(url.read().decode('utf-8'))
+    for answer in data['Answer']:
+        if answer['type'] == 48:
+            (flags, proto, alg, key_b64) = re.split("\s+", answer['data'])
+            if flags == '257':
+                ksks.append({'f': flags, 'p': proto, 'a': alg, 'k': key_b64})
+    return ksks
+
+
+def fetch_ksk_from_zonefile():
+    """Fetch root KSK from the root zone file"""
+    ksks = []
+    url = urlopen(URL_ROOT_ZONE)
+    for line in url.read().decode('utf-8').split('\n'):
+        if "DNSKEY\t" in line:
+            (dot, TTL, IN, DNSKEY, flags, proto, alg, key_b64) = re.split(r"\s+", line)
+            if flags == '257':
+                ksks.append({'f': flags, 'p': proto, 'a': alg, 'k': key_b64})
+    return ksks
 
 
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
@@ -289,22 +325,11 @@ print("After the date validity checks, there are now {} records.".format(len(Val
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
 ### https://dns.google.com/resolve?name=.&type=dnskey
 # Get the rootzone from its URL, write it to disk
-try:
-    RootZoneURL = urlopen(URL_ROOT_ZONE)
-except Exception as e:
-    Die("Was not able to open URL {}. The returned text was '{}'.".format(RootZoneURL, e))
-RootZoneContents = RootZoneURL.read()
-RootZoneURL.close()
-WriteOutFile(RootZoneFileName, RootZoneContents)
-# There might be multiple KSKs in the root zone
-KSKRecords = []
-for ThisRootZoneLine in RootZoneContents.splitlines():
-    ThisRootZoneLine = BytesToString(ThisRootZoneLine)
-    if "DNSKEY\t257" in ThisRootZoneLine:
-        (Dot, TTL, IN, DNSKEY, Flags, Proto, Alg, KeyAsBase64) = re.split(r"\s+", ThisRootZoneLine)
-        print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
-            flags=Flags, proto=Proto, alg=Alg, keystart=KeyAsBase64[0:15], keyend=KeyAsBase64[-15:]))
-        KSKRecords.append({"t": TTL, "f": Flags, "p": Proto, "a": Alg, "k": KeyAsBase64})
+KSKRecords = fetch_ksk()
+for key in KSKRecords:
+    print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}' in the root zone.".format(\
+        flags=key['f'], proto=key['p'], alg=key['a'],
+        keystart=key['k'][0:15], keyend=key['k'][-15:]))
 if len(KSKRecords) == 0:
     Die("Did not find any KSKs in the root zone file.")
 # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
@@ -329,8 +354,8 @@ else:
 ### Step 7. Write out the trust anchors as a DNSKEY and DS records
 for ThisMatchedKSK in MatchedKSKs:
     # Write out the DNSKEY
-    DNSKEYRecordContents = ". {ttl} IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
-        ttl=ThisMatchedKSK["t"], flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
+    DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
+        flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
         alg=ThisMatchedKSK["a"], keyas64=ThisMatchedKSK["k"])
     WriteOutFile(DNSKEYRecordFileName, DNSKEYRecordContents)
     # Write out the DS
@@ -348,7 +373,7 @@ for ThisMatchedKSK in MatchedKSKs:
             Accumulator += ThisByte
     ThisKeyTag = ((Accumulator & 0xFFFF) + (Accumulator>>16)) & 0xFFFF
     print("The key tag for this KSK is {}".format(ThisKeyTag))
-    DSRecordContents = ". {ttl} IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
-        ttl=ThisMatchedKSK["t"], keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
+    DSRecordContents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
+        keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
         sha256ofkey=HashAsHex)
     WriteOutFile(DSRecordFileName, DSRecordContents)
