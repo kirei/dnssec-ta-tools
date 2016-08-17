@@ -62,6 +62,10 @@ URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7
 URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
 URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
+NowDateTime = datetime.datetime.now()
+# Date string used for backup file names
+NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
+
 
 def Die(*Strings):
     """Generic way to leave the program early"""
@@ -317,7 +321,7 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
     return MatchedKSKs
 
 
-def export_ksk(ValidKSKs, DSRecordFileName):
+def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
     for ThisMatchedKSK in ValidKSKs:
         # Write out the DNSKEY
         DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
@@ -346,77 +350,78 @@ def export_ksk(ValidKSKs, DSRecordFileName):
         WriteOutFile(DSRecordFileName, DSRecordContents)
 
 
+def main():
+    """ Main function"""
 
-CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
-CmdParse.add_argument("--local", dest="Local", type=str,\
-    help="Name of local file to use instead of getting the trust anchor from the URL")
-Opts = CmdParse.parse_args()
+    CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
+    CmdParse.add_argument("--local", dest="Local", type=str,\
+        help="Name of local file to use instead of getting the trust anchor from the URL")
+    Opts = CmdParse.parse_args()
 
-NowDateTime = datetime.datetime.now()
-# Date string used for backup file names
-NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
+    TrustAnchorFileName = "root-anchors.xml"
+    SignatureFileName = "root-anchors.p7s"
+    ICANNCAFileName = "icanncacert.pem"
+    DNSKEYRecordFileName = "ksk-as-dnskey.txt"
+    DSRecordFileName = "ksk-as-ds.txt"
 
-TrustAnchorFileName = "root-anchors.xml"
-SignatureFileName = "root-anchors.p7s"
-ICANNCAFileName = "icanncacert.pem"
-DNSKEYRecordFileName = "ksk-as-dnskey.txt"
-DSRecordFileName = "ksk-as-ds.txt"
+    ### Step 1. Fetch the trust anchor file from IANA using HTTPS
+    if Opts.Local:
+        if not os.path.exists(Opts.Local):
+            Die("Could not find file {}.".format(Opts.Local))
+        try:
+            TrustAnchorXML = open(Opts.Local, mode="rt").read()
+        except:
+            Die("Could not read from file {}.".format(Opts.Local))
+    else:
+        # Get the trust anchr file from its URL, write it to disk
+        try:
+            TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
+        except Exception as e:
+            Die("Was not able to open URL {}. The returned text was '{}'.".format(\
+                URL_ROOT_ANCHORS, e))
+        TrustAnchorXML = TrustAnchorURL.read()
+        TrustAnchorURL.close()
+    WriteOutFile(TrustAnchorFileName, TrustAnchorXML)
 
-
-### Step 1. Fetch the trust anchor file from IANA using HTTPS
-if Opts.Local:
-    if not os.path.exists(Opts.Local):
-        Die("Could not find file {}.".format(Opts.Local))
+    ### Step 2. Fetch the S/MIME signature for the trust anchor file from IANA using HTTPS
+    # Get the signature file from its URL, write it to disk
     try:
-        TrustAnchorXML = open(Opts.Local, mode="rt").read()
-    except:
-        Die("Could not read from file {}.".format(Opts.Local))
-else:
-    # Get the trust anchr file from its URL, write it to disk
-    try:
-        TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
+        SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
     except Exception as e:
-        Die("Was not able to open URL {}. The returned text was '{}'.".format(\
-            URL_ROOT_ANCHORS, e))
-    TrustAnchorXML = TrustAnchorURL.read()
-    TrustAnchorURL.close()
-WriteOutFile(TrustAnchorFileName, TrustAnchorXML)
+        Die("Was not able to open URL {}. returned text was '{}'.".format(\
+            URL_ROOT_ANCHORS_SIGNATURE, e))
+    SignatureContents = SignatureURL.read()
+    SignatureURL.close()
+    WriteOutFile(SignatureFileName, SignatureContents)
 
-### Step 2. Fetch the S/MIME signature for the trust anchor file from IANA using HTTPS
-# Get the signature file from its URL, write it to disk
-try:
-    SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
-except Exception as e:
-    Die("Was not able to open URL {}. returned text was '{}'.".format(\
-        URL_ROOT_ANCHORS_SIGNATURE, e))
-SignatureContents = SignatureURL.read()
-SignatureURL.close()
-WriteOutFile(SignatureFileName, SignatureContents)
+    ### Step 3. Validate the signature on the trust anchor file using a built-in IANA CA key
+    # Skip this step if using a local file
+    if Opts.Local:
+        print("Not validating the local trust anchor file.")
+    else:
+        WriteOutFile(ICANNCAFileName, ICANN_ROOT_CA_CERT)
+        validate_detached_signature(TrustAnchorFileName, SignatureFileName, ICANNCAFileName)
+    
+    ### Step 4. Extract the trust anchor key digests from the trust anchor file
+    TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
+    
+    ### Step 5. Check the validity period for each digest
+    ValidTrustAnchors = get_valid_trust_anchors(TrustAnchors)
 
-### Step 3. Validate the signature on the trust anchor file using a built-in IANA CA key
-# Skip this step if using a local file
-if Opts.Local:
-    print("Not validating the local trust anchor file.")
-else:
-    WriteOutFile(ICANNCAFileName, ICANN_ROOT_CA_CERT)
-    validate_detached_signature(TrustAnchorFileName, SignatureFileName, ICANNCAFileName)
+    ### Step 6. Verify that the trust anchors match the KSK in the root zone file
+    ### Will be useful if we want to query the root zone instead of pulling the root zone file
+    # Get all DNSKEY KSKs
+    KSKRecords = fetch_ksk()
+    for key in KSKRecords:
+        print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
+            flags=key['f'], proto=key['p'], alg=key['a'],
+            keystart=key['k'][0:15], keyend=key['k'][-15:]))
+    # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
+    MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
-### Step 4. Extract the trust anchor key digests from the trust anchor file
-TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
+    ### Step 7. Write out the trust anchors as a DNSKEY and DS records
+    export_ksk(MatchedKSKs, DSRecordFileName, DNSKEYRecordFileName)
 
-### Step 5. Check the validity period for each digest
-ValidTrustAnchors = get_valid_trust_anchors(TrustAnchors)
 
-### Step 6. Verify that the trust anchors match the KSK in the root zone file
-### Will be useful if we want to query the root zone instead of pulling the root zone file
-# Get all DNSKEY KSKs
-KSKRecords = fetch_ksk()
-for key in KSKRecords:
-    print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
-        flags=key['f'], proto=key['p'], alg=key['a'],
-        keystart=key['k'][0:15], keyend=key['k'][-15:]))
-# Go trough all the KSKs, decoding them and comparing them to all the trust anchors
-MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
-
-### Step 7. Write out the trust anchors as a DNSKEY and DS records
-export_ksk(MatchedKSKs, DSRecordFileName)
+if __name__ == "__main__":
+    main()
