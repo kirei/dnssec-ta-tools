@@ -141,25 +141,33 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 
 
 def fetch_ksk():
-    try:
-        print("Fetching via Google Public DNS...")
-        ksks = fetch_ksk_from_google()
-    except:
-        try:
-            print("Fetching via Google Public DNS failed - trying root zone file...")
-            ksks = fetch_ksk_from_zonefile()
-        except:
-            raise Exception("All methods to fetch KSKs failed")
+    """Get the KSKs, or die if they can't be found in Google or the zone file"""
+    print("Fetching via Google Public DNS...")
+    ksks = fetch_ksk_from_google()
+    if ksks == None:
+        print("Fetching via Google Public DNS failed.\Fetching via the root zone file.")
+        ksks = fetch_ksk_from_zonefile()
+        if ksks == None:
+            Die("Could not fetch the KSKs from Google or get the root zine file.")
     if len(ksks) == 0:
-        raise Exception("No KSKs found")
+        Die("No KSKs were found.")
     return ksks
 
 
 def fetch_ksk_from_google():
     """Fetch root KSK via Google Public DNS"""
     ksks = []
-    url = urlopen(URL_RESOLVER_API)
-    data = json.loads(url.read().decode('utf-8'))
+    try:
+	      url = urlopen(URL_RESOLVER_API)
+	  except Exception as e:
+	      print("Was not able to open URL {}. The returned text was '{}'.".format(\
+            URL_RESOLVER_API, e))
+        return None
+    try:
+        data = json.loads(url.read().decode('utf-8'))
+    except Exception as e:
+        print("The JSON returned from Google was not readable: {}".format(e))
+        return None
     for answer in data['Answer']:
         if answer['type'] == 48:
             (flags, proto, alg, key_b64) = re.split("\s+", answer['data'])
@@ -171,7 +179,12 @@ def fetch_ksk_from_google():
 def fetch_ksk_from_zonefile():
     """Fetch root KSK from the root zone file"""
     ksks = []
-    url = urlopen(URL_ROOT_ZONE)
+    try:
+        url = urlopen(URL_ROOT_ZONE)
+	  except Exception as e:
+	      print("Was not able to open URL {}. The returned text was '{}'.".format(\
+            URL_ROOT_ZONE, e))
+        return None
     for line in url.read().decode('utf-8').split('\n'):
         if "DNSKEY\t" in line:
             (dot, TTL, IN, DNSKEY, flags, proto, alg, key_b64) = re.split(r"\s+", line)
@@ -328,10 +341,7 @@ print("After the date validity checks, there are now {} records.".format(len(Val
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
 # Get all DNSKEY KSKs
-try:
-    KSKRecords = fetch_ksk()
-except:
-    Die("Did not find any KSKs.")
+KSKRecords = fetch_ksk()
 for key in KSKRecords:
     print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
         flags=key['f'], proto=key['p'], alg=key['a'],
