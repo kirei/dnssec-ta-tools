@@ -256,6 +256,44 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
     return TrustAnchors
 
 
+def get_valid_trust_anchors(TrustAnchors):
+    ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
+    for (Count, ThisAnchor) in enumerate(TrustAnchors):
+        # Check the validity times; these only need to be accurate within a day or so
+        if ThisAnchor["validFrom"] == "":
+            print("Trust anchor {}: the validFrom attribute is empty,".format(Count),\
+                "so not using this trust anchor.")
+            continue
+        DigestElementValidFrom = ThisAnchor["validFrom"]
+        (FromLeft, _) = DigestElementValidFrom.split("T", 2)
+        (FromYear, FromMonth, FromDay) = FromLeft.split("-")
+        FromDateTime = datetime.datetime(int(FromYear), int(FromMonth), int(FromDay))
+        if NowDateTime < FromDateTime:
+            print("Trust anchor {}: the validFrom '{}' is later".format(Count, FromDateTime),\
+                "than today, so not using this trust anchor.")
+            continue
+        if ThisAnchor["validUntil"] == "":
+            print("Trust anchor {}: there was no validUntil attribute, ".format(Count),\
+                "so the validity is OK.")
+            ValidTrustAnchors.append(ThisAnchor)
+        else:
+            DigestElementValidUntil = ThisAnchor["validUntil"]
+            (UntilLeft, _) = DigestElementValidUntil.split("T", 2)
+            (UntilYear, UntilMonth, UntilDay) = UntilLeft.split("-")
+            UntilDateTime = datetime.datetime(int(UntilYear), int(UntilMonth), int(UntilDay))
+            if NowDateTime > UntilDateTime:
+                print("Trust anchor {}: the validUntil '{}' is before ".format(Count, UntilDateTime),\
+                    "today, so not using this trust anchor.")
+                continue
+            else:
+                print("Trust anchor {}: the validity period passes.".format(Count))
+                ValidTrustAnchors.append(ThisAnchor)
+    if len(ValidTrustAnchors) == 0:
+        Die("After checking validity dates, there were no trust anchors left.")
+    print("After the date validity checks, there are now {} records.".format(len(ValidTrustAnchors)))
+    return ValidTrustAnchors
+
+
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
 CmdParse.add_argument("--local", dest="Local", type=str,\
     help="Name of local file to use instead of getting the trust anchor from the URL")
@@ -314,40 +352,7 @@ else:
 TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
 
 ### Step 5. Check the validity period for each digest
-ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
-for (Count, ThisAnchor) in enumerate(TrustAnchors):
-    # Check the validity times; these only need to be accurate within a day or so
-    if ThisAnchor["validFrom"] == "":
-        print("Trust anchor {}: the validFrom attribute is empty,".format(Count),\
-            "so not using this trust anchor.")
-        continue
-    DigestElementValidFrom = ThisAnchor["validFrom"]
-    (FromLeft, _) = DigestElementValidFrom.split("T", 2)
-    (FromYear, FromMonth, FromDay) = FromLeft.split("-")
-    FromDateTime = datetime.datetime(int(FromYear), int(FromMonth), int(FromDay))
-    if NowDateTime < FromDateTime:
-        print("Trust anchor {}: the validFrom '{}' is later".format(Count, FromDateTime),\
-            "than today, so not using this trust anchor.")
-        continue
-    if ThisAnchor["validUntil"] == "":
-        print("Trust anchor {}: there was no validUntil attribute, ".format(Count),\
-            "so the validity is OK.")
-        ValidTrustAnchors.append(ThisAnchor)
-    else:
-        DigestElementValidUntil = ThisAnchor["validUntil"]
-        (UntilLeft, _) = DigestElementValidUntil.split("T", 2)
-        (UntilYear, UntilMonth, UntilDay) = UntilLeft.split("-")
-        UntilDateTime = datetime.datetime(int(UntilYear), int(UntilMonth), int(UntilDay))
-        if NowDateTime > UntilDateTime:
-            print("Trust anchor {}: the validUntil '{}' is before ".format(Count, UntilDateTime),\
-                "today, so not using this trust anchor.")
-            continue
-        else:
-            print("Trust anchor {}: the validity period passes.".format(Count))
-            ValidTrustAnchors.append(ThisAnchor)
-if len(ValidTrustAnchors) == 0:
-    Die("After checking validity dates, there were no trust anchors left.")
-print("After the date validity checks, there are now {} records.".format(len(ValidTrustAnchors)))
+ValidTrustAnchors = get_valid_trust_anchors(TrustAnchors)
 
 ### Step 6. Verify that the trust anchors match the KSK in the root zone file
 ### Will be useful if we want to query the root zone instead of pulling the root zone file
