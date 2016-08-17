@@ -141,14 +141,14 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 
 
 def fetch_ksk():
-    """Get the KSKs, or die if they can't be found in DNS or the zone file"""
-    print("Fetching via Google DNS-over-HTTPS...")
+    """Get the KSKs, or die if they can't be found in via Google nor the zone file"""
+    print("Fetching via Google...")
     ksks = fetch_ksk_from_google()
     if ksks == None:
-        print("Fetching via Google DNS-over-HTTPS failed.\Fetching via the root zone file.")
+        print("Fetching via Google failed. Fetching via the root zone file...")
         ksks = fetch_ksk_from_zonefile()
         if ksks == None:
-            Die("Could not fetch the KSKs from Google or get the root zine file.")
+            Die("Could not fetch the KSKs from Google nor get the root zone file.")
     if len(ksks) == 0:
         Die("No KSKs were found.")
     return ksks
