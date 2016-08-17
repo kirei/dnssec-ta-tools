@@ -351,7 +351,7 @@ def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
 
 
 def main():
-    """ Main function"""
+    """Main function"""
 
     CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
     CmdParse.add_argument("--local", dest="Local", type=str,\
@@ -373,7 +373,7 @@ def main():
         except:
             Die("Could not read from file {}.".format(Opts.Local))
     else:
-        # Get the trust anchr file from its URL, write it to disk
+        # Get the trust anchor file from its URL, write it to disk
         try:
             TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
         except Exception as e:
@@ -383,8 +383,8 @@ def main():
         TrustAnchorURL.close()
     WriteOutFile(TRUST_ANCHOR_FILENAME, TrustAnchorXML)
 
-    ### Step 2. Fetch the S/MIME signature for the trust anchor file from IANA using HTTPS
-    # Get the signature file from its URL, write it to disk
+    ### Step 2. Fetch the S/MIME signature for the trust anchor file from
+    ### IANA using HTTPS. Get the signature file from its URL, write it to disk.
     try:
         SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
     except Exception as e:
@@ -394,8 +394,8 @@ def main():
     SignatureURL.close()
     WriteOutFile(SIGNATURE_FILENAME, SignatureContents)
 
-    ### Step 3. Validate the signature on the trust anchor file using a built-in IANA CA key
-    # Skip this step if using a local file
+    ### Step 3. Validate the signature on the trust anchor file using a
+    ### built-in IANA CA key. Skip this step if using a local file.
     if Opts.Local:
         print("Not validating the local trust anchor file.")
     else:
@@ -408,9 +408,8 @@ def main():
     ### Step 5. Check the validity period for each digest
     ValidTrustAnchors = get_valid_trust_anchors(TrustAnchors)
 
-    ### Step 6. Verify that the trust anchors match the KSK in the root zone file
-    ### Will be useful if we want to query the root zone instead of pulling the root zone file
-    # Get all DNSKEY KSKs
+    ### Step 6. Verify that the trust anchors match the published KSKs
+    ### file.
     KSKRecords = fetch_ksk()
     for key in KSKRecords:
         print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
@@ -419,7 +418,7 @@ def main():
     # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
     MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
-    ### Step 7. Write out the trust anchors as a DNSKEY and DS records
+    ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
     export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
 
 
