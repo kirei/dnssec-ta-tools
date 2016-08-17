@@ -135,6 +135,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
     DigestContent.append(0)  # Name of the zone, expressed in wire format
     DigestContent.extend(struct.pack("!HBB", int(DNSKEYdict["f"]),\
         int(DNSKEYdict["p"]), int(DNSKEYdict["a"])))
+    KeyBytes = base64.b64decode(DNSKEYdict["k"])
     DigestContent.extend(KeyBytes)
     ThisHash.update(DigestContent)
     return (ThisHash.hexdigest()).upper()
@@ -295,6 +296,27 @@ def get_valid_trust_anchors(TrustAnchors):
     return ValidTrustAnchors
 
 
+def get_matching_ksk(KSKRecords, ValidTrustAnchors):
+    MatchedKSKs = []
+    for ThisKSKRecord in KSKRecords:
+        try:
+            KeyBytes = base64.b64decode(ThisKSKRecord["k"])
+        except:
+            Die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
+        for (Count, ThisTrustAnchor) in enumerate(ValidTrustAnchors):
+            HashAsHex = DNSKEYtoHexOfHash(ThisKSKRecord, ThisTrustAnchor["DigestType"])
+            if HashAsHex == ThisTrustAnchor["Digest"]:
+                print("Trust anchor {} matched KSK '{}...{}'".format(Count,\
+                    ThisKSKRecord["k"][0:15], ThisKSKRecord["k"][-15:]))
+                MatchedKSKs.append(ThisKSKRecord)
+                break  # Don't check more trust anchors against this KSK
+    if len(MatchedKSKs) == 0:
+        Die("After checking for trust anchor matches, there were no trusted KSKs.")
+    else:
+        print("There were {} matched KSKs.".format(len(MatchedKSKs)))
+    return MatchedKSKs
+
+
 def export_ksk(ValidKSKs, DSRecordFileName):
     for ThisMatchedKSK in ValidKSKs:
         # Write out the DNSKEY
@@ -308,6 +330,7 @@ def export_ksk(ValidKSKs, DSRecordFileName):
         TagBase = bytearray()
         TagBase.extend(struct.pack("!HBB", int(ThisMatchedKSK["f"]), int(ThisMatchedKSK["p"]),\
             int(ThisMatchedKSK["a"])))
+        KeyBytes = base64.b64decode(ThisMatchedKSK["k"])
         TagBase.extend(KeyBytes)
         Accumulator = 0
         for (Counter, ThisByte) in enumerate(TagBase):
@@ -393,23 +416,7 @@ for key in KSKRecords:
         flags=key['f'], proto=key['p'], alg=key['a'],
         keystart=key['k'][0:15], keyend=key['k'][-15:]))
 # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
-MatchedKSKs = []
-for ThisKSKRecord in KSKRecords:
-    try:
-        KeyBytes = base64.b64decode(ThisKSKRecord["k"])
-    except:
-        Die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
-    for (Count, ThisTrustAnchor) in enumerate(ValidTrustAnchors):
-        HashAsHex = DNSKEYtoHexOfHash(ThisKSKRecord, ThisTrustAnchor["DigestType"])
-        if HashAsHex == ThisTrustAnchor["Digest"]:
-            print("Trust anchor {} matched KSK '{}...{}'".format(Count,\
-                ThisKSKRecord["k"][0:15], ThisKSKRecord["k"][-15:]))
-            MatchedKSKs.append(ThisKSKRecord)
-            break  # Don't check more trust anchors against this KSK
-if len(MatchedKSKs) == 0:
-    Die("After checking for trust anchor matches, there were no trusted KSKs.")
-else:
-    print("There were {} matched KSKs.".format(len(MatchedKSKs)))
+MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
 ### Step 7. Write out the trust anchors as a DNSKEY and DS records
 export_ksk(MatchedKSKs, DSRecordFileName)
