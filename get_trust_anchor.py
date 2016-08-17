@@ -295,7 +295,7 @@ def get_valid_trust_anchors(TrustAnchors):
     return ValidTrustAnchors
 
 
-def export_dnskey_as_ds(ValidKSKs, DSRecordFileName):
+def export_ksk(ValidKSKs, DSRecordFileName):
     for ThisMatchedKSK in ValidKSKs:
         # Write out the DNSKEY
         DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
@@ -412,4 +412,4 @@ else:
     print("There were {} matched KSKs.".format(len(MatchedKSKs)))
 
 ### Step 7. Write out the trust anchors as a DNSKEY and DS records
-export_dnskey_as_ds(MatchedKSKs, DSRecordFileName)
+export_ksk(MatchedKSKs, DSRecordFileName)
