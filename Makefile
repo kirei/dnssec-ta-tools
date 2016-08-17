@@ -5,9 +5,16 @@ MODULES=	pylint iso8601 xmltodict dnspython pyOpenSSL pyCrypto
 
 TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem \
 		icanncacert.pem \
-		ksk-as-dnskey.txt ksk-as-ds.txt root.zone
+		K*.{dnskey,ds} \
+		test-anchors.{ds,dnskey} \
+		root-anchors.{ds,dnskey} \
+		ksk-as-{dnskey,ds}.txt root.zone
 
-CSR=		Kjqmt7v.csr
+KNOWN_GOOD=	regress/known_good
+
+KEYID=		Kjqmt7v
+CSR=		$(KEYID).csr
+ANCHORS=	root-anchors.xml test-anchors.xml
 
 all:
 	
@@ -22,8 +29,33 @@ $(VENV):
 demo: $(VENV) root-anchors.xml
 	$(VENV)/bin/python dnssec_ta_tool.py --format dnskey --verbose
 
-test: $(VENV)
-	$(VENV)/bin/python dnssec_ta_tool.py --anchors test-anchors.xml --format dnskey --verbose
+test: $(VENV) $(ANCHORS) $(CSR)
+	$(VENV)/bin/python dnssec_ta_tool.py --verbose \
+		--anchors test-anchors.xml --format dnskey \
+		--output test-anchors.dnskey
+	diff -u $(KNOWN_GOOD)/test-anchors.dnskey test-anchors.dnskey
+
+	$(VENV)/bin/python dnssec_ta_tool.py --verbose \
+		--anchors test-anchors.xml --format ds \
+		--output test-anchors.ds
+	diff -u $(KNOWN_GOOD)/test-anchors.ds test-anchors.ds
+
+	$(VENV)/bin/python dnssec_ta_tool.py --verbose \
+		--anchors root-anchors.xml --format dnskey \
+		--output root-anchors.dnskey
+	diff -u $(KNOWN_GOOD)/root-anchors.dnskey root-anchors.dnskey
+
+	$(VENV)/bin/python dnssec_ta_tool.py --verbose \
+		--anchors root-anchors.xml --format ds \
+		--output root-anchors.ds
+	diff -u $(KNOWN_GOOD)/root-anchors.ds root-anchors.ds
+
+	$(VENV)/bin/python csr2dnskey.py --csr $(CSR) --output $(KEYID).dnskey
+	diff -u $(KNOWN_GOOD)/$(KEYID).dnskey $(KEYID).dnskey
+
+	$(VENV)/bin/python get_trust_anchor.py
+	diff -u $(KNOWN_GOOD)/ksk-as-dnskey.txt ksk-as-dnskey.txt
+	diff -u $(KNOWN_GOOD)/ksk-as-ds.txt ksk-as-ds.txt
 
 root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
@@ -41,8 +73,8 @@ root-anchors.xml: root-anchors.p7s icannbundle.pem
 
 csr: $(CSR)
 
-Kjqmt7v.csr:
-	curl -o $@ http://data.iana.org/root-anchors/Kjqmt7v.csr
+$(CSR):
+	curl -o $@ http://data.iana.org/root-anchors/$(KEYID).csr
 
 realclean: clean
 	rm -rf $(VENV)
