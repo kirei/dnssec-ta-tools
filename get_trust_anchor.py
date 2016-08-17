@@ -213,6 +213,49 @@ def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName)
             sig=SignatureFileName, cont=ContentsFilename))
 
 
+def extract_trust_anchors_from_xml(TrustAnchorXML):
+    """Extract the trust anchor key digests from the trust anchor file"""
+    # Turn the bytes from TrustAnchorXML into a string
+    TrustAnchorXMLString = BytesToString(TrustAnchorXML)
+    # Sanity check: make sure there is enough text in the returned stuff
+    if len(TrustAnchorXMLString) < 100:
+        Die("The text returned from getting {} was too short: '{}'.".format(\
+            TrustAnchorURL, TrustAnchorXMLString))
+    # ElementTree requries a file so use StringIO to turn the string into a file
+    try:
+        TrustAnchorAsFile = StringIO(TrustAnchorXMLString)  # This works for Python 3
+    except:
+        TrustAnchorAsFile = StringIO(unicode(TrustAnchorXMLString))  # Needed for Python 2
+    # Get the tree
+    TrustAnchorTree = xml.etree.ElementTree.ElementTree(file=TrustAnchorAsFile)
+    # Get all the KeyDigest elements
+    DigestElements = TrustAnchorTree.findall(".//KeyDigest")
+    print("There were {} KeyDigest elements in the trust anchor file.".format(\
+        len(DigestElements)))
+    TrustAnchors = []  # Global list of dicts that is taken from the XML file
+    # Collect the values for the KeyDigest subelements and attributes
+    for (Count, ThisDigestElement) in enumerate(DigestElements):
+        DigestValueDict = {}
+        for ThisSubElement in ["KeyTag", "Algorithm", "DigestType", "Digest"]:
+            try:
+                ThisKeyTagText = (ThisDigestElement.find(ThisSubElement)).text
+            except:
+                Die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
+            DigestValueDict[ThisSubElement] = ThisKeyTagText
+        for ThisAttribute in ["validFrom", "validUntil"]:
+            if ThisAttribute in ThisDigestElement.keys():
+                DigestValueDict[ThisAttribute] = ThisDigestElement.attrib[ThisAttribute]
+            else:
+                DigestValueDict[ThisAttribute] = ""  # Note that missing attributes get empty values
+        # Save this to the global TrustAnchors list
+        print("Added the trust anchor {} to the list:\n{}".format(Count, pprint.pformat(\
+            DigestValueDict)))
+        TrustAnchors.append(DigestValueDict)
+    if len(TrustAnchors) == 0:
+        Die("There were no trust anchors found in the XML file.")
+    return TrustAnchors
+
+
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
 CmdParse.add_argument("--local", dest="Local", type=str,\
     help="Name of local file to use instead of getting the trust anchor from the URL")
@@ -268,44 +311,7 @@ else:
     validate_detached_signature(TrustAnchorFileName, SignatureFileName, ICANNCAFileName)
 
 ### Step 4. Extract the trust anchor key digests from the trust anchor file
-# Turn the bytes from TrustAnchorXML into a string
-TrustAnchorXMLString = BytesToString(TrustAnchorXML)
-# Sanity check: make sure there is enough text in the returned stuff
-if len(TrustAnchorXMLString) < 100:
-    Die("The text returned from getting {} was too short: '{}'.".format(\
-        TrustAnchorURL, TrustAnchorXMLString))
-# ElementTree requries a file so use StringIO to turn the string into a file
-try:
-    TrustAnchorAsFile = StringIO(TrustAnchorXMLString)  # This works for Python 3
-except:
-    TrustAnchorAsFile = StringIO(unicode(TrustAnchorXMLString))  # Needed for Python 2
-# Get the tree
-TrustAnchorTree = xml.etree.ElementTree.ElementTree(file=TrustAnchorAsFile)
-# Get all the KeyDigest elements
-DigestElements = TrustAnchorTree.findall(".//KeyDigest")
-print("There were {} KeyDigest elements in the trust anchor file.".format(\
-    len(DigestElements)))
-TrustAnchors = []  # Global list of dicts that is taken from the XML file
-# Collect the values for the KeyDigest subelements and attributes
-for (Count, ThisDigestElement) in enumerate(DigestElements):
-    DigestValueDict = {}
-    for ThisSubElement in ["KeyTag", "Algorithm", "DigestType", "Digest"]:
-        try:
-            ThisKeyTagText = (ThisDigestElement.find(ThisSubElement)).text
-        except:
-            Die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
-        DigestValueDict[ThisSubElement] = ThisKeyTagText
-    for ThisAttribute in ["validFrom", "validUntil"]:
-        if ThisAttribute in ThisDigestElement.keys():
-            DigestValueDict[ThisAttribute] = ThisDigestElement.attrib[ThisAttribute]
-        else:
-            DigestValueDict[ThisAttribute] = ""  # Note that missing attributes get empty values
-    # Save this to the global TrustAnchors list
-    print("Added the trust anchor {} to the list:\n{}".format(Count, pprint.pformat(\
-        DigestValueDict)))
-    TrustAnchors.append(DigestValueDict)
-if len(TrustAnchors) == 0:
-    Die("There were no trust anchors found in the XML file.")
+TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
 
 ### Step 5. Check the validity period for each digest
 ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
