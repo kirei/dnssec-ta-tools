@@ -158,9 +158,9 @@ def fetch_ksk_from_google():
     """Fetch root KSK via Google DNS-over-HTTPS"""
     ksks = []
     try:
-	      url = urlopen(URL_RESOLVER_API)
-	  except Exception as e:
-	      print("Was not able to open URL {}. The returned text was '{}'.".format(\
+        url = urlopen(URL_RESOLVER_API)
+    except Exception as e:
+        print("Was not able to open URL {}. The returned text was '{}'.".format(\
             URL_RESOLVER_API, e))
         return None
     try:
@@ -181,8 +181,8 @@ def fetch_ksk_from_zonefile():
     ksks = []
     try:
         url = urlopen(URL_ROOT_ZONE)
-	  except Exception as e:
-	      print("Was not able to open URL {}. The returned text was '{}'.".format(\
+    except Exception as e:
+        print("Was not able to open URL {}. The returned text was '{}'.".format(\
             URL_ROOT_ZONE, e))
         return None
     for line in url.read().decode('utf-8').split('\n'):
