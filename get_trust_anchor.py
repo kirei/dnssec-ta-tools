@@ -358,11 +358,11 @@ def main():
         help="Name of local file to use instead of getting the trust anchor from the URL")
     Opts = CmdParse.parse_args()
 
-    TrustAnchorFileName = "root-anchors.xml"
-    SignatureFileName = "root-anchors.p7s"
-    ICANNCAFileName = "icanncacert.pem"
-    DNSKEYRecordFileName = "ksk-as-dnskey.txt"
-    DSRecordFileName = "ksk-as-ds.txt"
+    TRUST_ANCHOR_FILENAME = "root-anchors.xml"
+    SIGNATURE_FILENAME = "root-anchors.p7s"
+    ICANN_CA_FILENAME = "icanncacert.pem"
+    DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
+    DS_RECORD_FILENAME = "ksk-as-ds.txt"
 
     ### Step 1. Fetch the trust anchor file from IANA using HTTPS
     if Opts.Local:
@@ -381,7 +381,7 @@ def main():
                 URL_ROOT_ANCHORS, e))
         TrustAnchorXML = TrustAnchorURL.read()
         TrustAnchorURL.close()
-    WriteOutFile(TrustAnchorFileName, TrustAnchorXML)
+    WriteOutFile(TRUST_ANCHOR_FILENAME, TrustAnchorXML)
 
     ### Step 2. Fetch the S/MIME signature for the trust anchor file from IANA using HTTPS
     # Get the signature file from its URL, write it to disk
@@ -392,15 +392,15 @@ def main():
             URL_ROOT_ANCHORS_SIGNATURE, e))
     SignatureContents = SignatureURL.read()
     SignatureURL.close()
-    WriteOutFile(SignatureFileName, SignatureContents)
+    WriteOutFile(SIGNATURE_FILENAME, SignatureContents)
 
     ### Step 3. Validate the signature on the trust anchor file using a built-in IANA CA key
     # Skip this step if using a local file
     if Opts.Local:
         print("Not validating the local trust anchor file.")
     else:
-        WriteOutFile(ICANNCAFileName, ICANN_ROOT_CA_CERT)
-        validate_detached_signature(TrustAnchorFileName, SignatureFileName, ICANNCAFileName)
+        WriteOutFile(ICANN_CA_FILENAME, ICANN_ROOT_CA_CERT)
+        validate_detached_signature(TRUST_ANCHOR_FILENAME, SIGNATURE_FILENAME, ICANN_CA_FILENAME)
     
     ### Step 4. Extract the trust anchor key digests from the trust anchor file
     TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
@@ -420,7 +420,7 @@ def main():
     MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records
-    export_ksk(MatchedKSKs, DSRecordFileName, DNSKEYRecordFileName)
+    export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
 
 
 if __name__ == "__main__":
