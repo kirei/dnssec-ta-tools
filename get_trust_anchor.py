@@ -295,6 +295,35 @@ def get_valid_trust_anchors(TrustAnchors):
     return ValidTrustAnchors
 
 
+def export_dnskey_as_ds(ValidKSKs, DSRecordFileName):
+    for ThisMatchedKSK in ValidKSKs:
+        # Write out the DNSKEY
+        DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
+            flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
+            alg=ThisMatchedKSK["a"], keyas64=ThisMatchedKSK["k"])
+        WriteOutFile(DNSKEYRecordFileName, DNSKEYRecordContents)
+        # Write out the DS
+        HashAsHex = DNSKEYtoHexOfHash(ThisMatchedKSK, "2")  # Always do SHA256
+        # Calculate the keytag
+        TagBase = bytearray()
+        TagBase.extend(struct.pack("!HBB", int(ThisMatchedKSK["f"]), int(ThisMatchedKSK["p"]),\
+            int(ThisMatchedKSK["a"])))
+        TagBase.extend(KeyBytes)
+        Accumulator = 0
+        for (Counter, ThisByte) in enumerate(TagBase):
+            if (Counter % 2) == 0:
+                Accumulator += (ThisByte << 8)
+            else:
+                Accumulator += ThisByte
+        ThisKeyTag = ((Accumulator & 0xFFFF) + (Accumulator>>16)) & 0xFFFF
+        print("The key tag for this KSK is {}".format(ThisKeyTag))
+        DSRecordContents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
+            keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
+            sha256ofkey=HashAsHex)
+        WriteOutFile(DSRecordFileName, DSRecordContents)
+
+
+
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
 CmdParse.add_argument("--local", dest="Local", type=str,\
     help="Name of local file to use instead of getting the trust anchor from the URL")
@@ -383,28 +412,4 @@ else:
     print("There were {} matched KSKs.".format(len(MatchedKSKs)))
 
 ### Step 7. Write out the trust anchors as a DNSKEY and DS records
-for ThisMatchedKSK in MatchedKSKs:
-    # Write out the DNSKEY
-    DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
-        flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
-        alg=ThisMatchedKSK["a"], keyas64=ThisMatchedKSK["k"])
-    WriteOutFile(DNSKEYRecordFileName, DNSKEYRecordContents)
-    # Write out the DS
-    HashAsHex = DNSKEYtoHexOfHash(ThisMatchedKSK, "2")  # Always do SHA256
-    # Calculate the keytag
-    TagBase = bytearray()
-    TagBase.extend(struct.pack("!HBB", int(ThisMatchedKSK["f"]), int(ThisMatchedKSK["p"]),\
-        int(ThisMatchedKSK["a"])))
-    TagBase.extend(KeyBytes)
-    Accumulator = 0
-    for (Counter, ThisByte) in enumerate(TagBase):
-        if (Counter % 2) == 0:
-            Accumulator += (ThisByte << 8)
-        else:
-            Accumulator += ThisByte
-    ThisKeyTag = ((Accumulator & 0xFFFF) + (Accumulator>>16)) & 0xFFFF
-    print("The key tag for this KSK is {}".format(ThisKeyTag))
-    DSRecordContents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
-        keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
-        sha256ofkey=HashAsHex)
-    WriteOutFile(DSRecordFileName, DSRecordContents)
+export_dnskey_as_ds(MatchedKSKs, DSRecordFileName)
