@@ -141,11 +141,11 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 
 
 def fetch_ksk():
-    """Get the KSKs, or die if they can't be found in Google or the zone file"""
-    print("Fetching via Google Public DNS...")
+    """Get the KSKs, or die if they can't be found in DNS or the zone file"""
+    print("Fetching via Google DNS-over-HTTPS...")
     ksks = fetch_ksk_from_google()
     if ksks == None:
-        print("Fetching via Google Public DNS failed.\Fetching via the root zone file.")
+        print("Fetching via Google DNS-over-HTTPS failed.\Fetching via the root zone file.")
         ksks = fetch_ksk_from_zonefile()
         if ksks == None:
             Die("Could not fetch the KSKs from Google or get the root zine file.")
@@ -155,7 +155,7 @@ def fetch_ksk():
 
 
 def fetch_ksk_from_google():
-    """Fetch root KSK via Google Public DNS"""
+    """Fetch root KSK via Google DNS-over-HTTPS"""
     ksks = []
     try:
 	      url = urlopen(URL_RESOLVER_API)
@@ -166,7 +166,7 @@ def fetch_ksk_from_google():
     try:
         data = json.loads(url.read().decode('utf-8'))
     except Exception as e:
-        print("The JSON returned from Google was not readable: {}".format(e))
+        print("The JSON returned from Google DNS-over-HTTPS was not readable: {}".format(e))
         return None
     for answer in data['Answer']:
         if answer['type'] == 48:
