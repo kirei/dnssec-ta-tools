@@ -193,6 +193,26 @@ def fetch_ksk_from_zonefile():
     return ksks
 
 
+def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName):
+    """Validate a detached S/MIME signature"""
+    # Make sure there is an "openssl" command in their shell path
+    WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
+    if WhichReturn != 0:
+        Die("Could not find the 'openssl' command on this system.")
+    # Run openssl to validate the signature
+    ValidateCommand = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
+    ValidatePopen = subprocess.Popen(ValidateCommand.format(\
+        ca=CAFileName, sig=SignatureFileName, cont=ContentsFilename),\
+        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (ValidOut, ValidErr) = ValidatePopen.communicate()
+    if ValidatePopen.returncode != 0:
+        Die("When running openssl, the return code was {} ".format(ValidatePopen.returncode),\
+            "and the output was the following.\n{}".format(ValidOut))
+    else:
+        print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
+            sig=SignatureFileName, cont=ContentsFilename))
+
+
 CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
 CmdParse.add_argument("--local", dest="Local", type=str,\
     help="Name of local file to use instead of getting the trust anchor from the URL")
@@ -245,22 +265,7 @@ if Opts.Local:
     print("Not validating the local trust anchor file.")
 else:
     WriteOutFile(ICANNCAFileName, ICANN_ROOT_CA_CERT)
-    # Make sure there is an "openssl" command in their shell path
-    WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
-    if WhichReturn != 0:
-        Die("Could not find the 'openssl' command on this system.")
-    # Run openssl to validate the signature
-    ValidateCommand = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
-    ValidatePopen = subprocess.Popen(ValidateCommand.format(\
-        ca=ICANNCAFileName, sig=SignatureFileName, cont=TrustAnchorFileName),\
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (ValidOut, ValidErr) = ValidatePopen.communicate()
-    if ValidatePopen.returncode != 0:
-        Die("When running openssl, the return code was {} ".format(ValidatePopen.returncode),\
-            "and the output was the following.\n{}".format(ValidOut))
-    else:
-        print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
-            sig=SignatureFileName, cont=TrustAnchorFileName))
+    validate_detached_signature(TrustAnchorFileName, SignatureFileName, ICANNCAFileName)
 
 ### Step 4. Extract the trust anchor key digests from the trust anchor file
 # Turn the bytes from TrustAnchorXML into a string
