@@ -257,6 +257,7 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
 
 
 def get_valid_trust_anchors(TrustAnchors):
+    """Get currently valid trust anchors"""
     ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
     for (Count, ThisAnchor) in enumerate(TrustAnchors):
         # Check the validity times; these only need to be accurate within a day or so
