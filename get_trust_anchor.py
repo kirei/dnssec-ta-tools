@@ -45,8 +45,19 @@ trust anchors are still cryptographically validated.
 
 from __future__ import print_function
 
-import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
-import pprint, re, hashlib, struct, argparse, json, unicode
+import argparse
+import base64
+import codecs
+import datetime
+import hashlib
+import json
+import os
+import pprint
+import re
+import struct
+import subprocess
+import sys
+import xml.etree.ElementTree
 
 
 ICANN_ROOT_CA_CERT = '''
@@ -84,88 +95,83 @@ def die(*Strings):
     sys.stderr.write("".join(Strings) + " Exiting.\n")
     exit()
 
-# Get the urlopen function from urllib.request (Python 3) or urllib2 (Python 2)
-try:
+python_major = int(sys.version_info[0])
+python_minor = int(sys.version_info[1])
+if (python_major == 2) and (python_minor != 7):
+    die("If this program is running in Python 2, it must be Python 2.7.")
+
+# Get the urlopen and StringIO functions
+if python_major == 2:
+    from urllib2 import urlopen
+    from StringIO import StringIO
+else:
     from urllib.request import urlopen
-except:
-    try:
-        from urllib2 import urlopen
-    except:
-        die("Was not able to import urlopen from Python 2 or 3.")
-
-# Get the StringIO function from io (Python 3) or StringIO (Python 2)
-try:
     from io import StringIO
-except:
-    try:
-        from StringIO import StringIO
-    except:
-        die("Was not able to import StringIO from Python 2 or 3.")
 
 
-def BytesToString(ByteArray):
+def bytes_to_string(byte_array):
     """Convert bytes that are in ASCII into strings.
         This is used for content received over URLs."""
-    if isinstance(ByteArray, str):
-        return str(ByteArray)
-    ASCIICodec = codecs.lookup("ascii")
-    return ASCIICodec.decode(ByteArray)[0]
+    if isinstance(byte_array, str):
+        return str(byte_array)
+    ascii_codec = codecs.lookup("ascii")
+    return ascii_codec.decode(byte_array)[0]
 
 
-def WriteOutFile(FileName, FileContents):
+def write_out_file(file_name, file_contents):
     """Takes a name of a file and string or bytearray; returns nothing.
         Writes out a file that we got from a URL or string; backs up the file if it exists."""
     # Back up the current one if it is there
-    if os.path.exists(FileName):
-        NowDateTime = datetime.datetime.now()
-        NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
+    if os.path.exists(file_name):
+        now_datetime = datetime.datetime.now()
+        now_string = "backed-up-at-" + now_datetime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
         try:
-            os.rename(FileName, NowString+FileName)
+            os.rename(file_name, now_string+file_name)
             # It seems too wordy to say what got backed up.
-            # print("Backed up {} to {}.".format(FileName, NowString+FileName))
+            # print("Backed up {} to {}.".format(file_name, now_string+file_name))
         except:
-            die("Failed to rename {} to {}.".format(FileName, NowString+FileName))
+            die("Failed to rename {} to {}.".format(file_name, now_string+file_name))
     # Pick the mode string based on the type of contents
-    if isinstance(FileContents, str):
-        Mode = "wt"
+    if isinstance(file_contents, str):
+        filemode = "wt"
     else:
-        Mode = "wb"
+        filemode = "wb"
     try:
-        TrustAnchorFileObj = open(FileName, mode=Mode)
-        TrustAnchorFileObj.write(FileContents)
-        TrustAnchorFileObj.close()
-        print("Saved file {}, length {}.".format(FileName, len(FileContents)))
+        fobj = open(file_name, mode=filemode)
+        fobj.write(file_contents)
+        fobj.close()
+        print("Saved file {}, length {}.".format(file_name, len(file_contents)))
     except:
-        die("Could not write out the file {}.".format(FileName))
+        die("Could not write out the file {}.".format(file_name))
     return
 
 
-def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
+def dnskey_to_hex_of_hash(dnskey_dict, hash_type):
     """Takes a DNSKEY dict and hash type (string), and returns the hex of the hash as a string"""
-    if HashType == "1":
-        ThisHash = hashlib.sha1()
-    elif HashType == "2":
-        ThisHash = hashlib.sha256()
+    if hash_type == "1":
+        this_hash = hashlib.sha1()
+    elif hash_type == "2":
+        this_hash = hashlib.sha256()
     else:
-        die("A DNSKEY dict had a hash type of {}, which is unknown.".format(HashType))
-    DigestContent = bytearray()
-    DigestContent.append(0)  # Name of the zone, expressed in wire format
-    DigestContent.extend(struct.pack("!HBB", int(DNSKEYdict["f"]),\
-        int(DNSKEYdict["p"]), int(DNSKEYdict["a"])))
-    KeyBytes = base64.b64decode(DNSKEYdict["k"])
-    DigestContent.extend(KeyBytes)
-    ThisHash.update(DigestContent)
-    return (ThisHash.hexdigest()).upper()
+        die("A DNSKEY dict had a hash type of {}, which is unknown.".format(hash_type))
+    digest_content = bytearray()
+    digest_content.append(0)  # Name of the zone, expressed in wire format
+    digest_content.extend(struct.pack("!HBB", int(dnskey_dict["f"]),\
+        int(dnskey_dict["p"]), int(dnskey_dict["a"])))
+    key_bytes = base64.b64decode(dnskey_dict["k"])
+    digest_content.extend(key_bytes)
+    this_hash.update(digest_content)
+    return (this_hash.hexdigest()).upper()
 
 
 def fetch_ksk():
     """Return the KSKs, or die if they can't be found in via Google nor the zone file"""
     print("Fetching via Google...")
     ksks = fetch_ksk_from_google()
-    if ksks == None:
+    if ksks is None:
         print("Fetching via Google failed. Fetching via the root zone file...")
         ksks = fetch_ksk_from_zonefile()
-        if ksks == None:
+        if ksks is None:
             die("Could not fetch the KSKs from Google nor get the root zone file.")
     if len(ksks) == 0:
         die("No KSKs were found.")
@@ -188,7 +194,7 @@ def fetch_ksk_from_google():
         return None
     for answer in data['Answer']:
         if answer['type'] == 48:
-            (flags, proto, alg, key_b64) = re.split("\s+", answer['data'])
+            (flags, proto, alg, key_b64) = re.split(r"\s+", answer['data'])
             if flags == '257':
                 ksks.append({'f': flags, 'p': proto, 'a': alg, 'k': key_b64})
     return ksks
@@ -205,166 +211,170 @@ def fetch_ksk_from_zonefile():
         return None
     for line in url.read().decode('utf-8').split('\n'):
         if "DNSKEY\t" in line:
-            (dot, TTL, IN, DNSKEY, flags, proto, alg, key_b64) = re.split(r"\s+", line)
+            (_, _, _, _, flags, proto, alg, key_b64) = re.split(r"\s+", line)
             if flags == '257':
                 ksks.append({'f': flags, 'p': proto, 'a': alg, 'k': key_b64})
     return ksks
 
 
-def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName):
+def validate_detached_signature(contents_filename, signature_filename, ca_filename):
     """Takes the name of the contents file, the signature file, and CA file;
         returns nothing if sucessful or dies if openssl returns an error."""
     # Run openssl to validate the signature
-    ValidateCommand = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
-    ValidatePopen = subprocess.Popen(ValidateCommand.format(\
-        ca=CAFileName, sig=SignatureFileName, cont=ContentsFilename),\
+    validate_command = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
+    validate_popen = subprocess.Popen(validate_command.format(\
+        ca=ca_filename, sig=signature_filename, cont=contents_filename),\
         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (ValidOut, ValidErr) = ValidatePopen.communicate()
-    if ValidatePopen.returncode != 0:
-        die("When running openssl, the return code was {} ".format(ValidatePopen.returncode),\
-            "and the output was the following.\n{}".format(ValidOut))
+    (validate_out, validate_err) = validate_popen.communicate()
+    if validate_popen.returncode != 0:
+        die("When running openssl, the return code was {} ".format(validate_popen.returncode),\
+            "and the output was the following.\n{} {}".format(validate_err, validate_out))
     else:
         print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
-            sig=SignatureFileName, cont=ContentsFilename))
+            sig=signature_filename, cont=contents_filename))
 
 
-def extract_trust_anchors_from_xml(TrustAnchorXML):
+def extract_trust_anchors_from_xml(trust_anchor_xml):
     """Takes a bytestring with the XML from IANA; returns a list of trust anchors."""
-    # Turn the bytes from TrustAnchorXML into a string
-    TrustAnchorXMLString = BytesToString(TrustAnchorXML)
+    # Turn the bytes from trust_anchor_xml into a string
+    trust_anchor_xml_string = bytes_to_string(trust_anchor_xml)
     # Sanity check: make sure there is enough text in the returned stuff
-    if len(TrustAnchorXMLString) < 100:
-        die("The text returned from getting {} was too short: '{}'.".format(TrustAnchorXMLString))
+    if len(trust_anchor_xml_string) < 100:
+        die("The XML was too short: {} chars.".format(len(trust_anchor_xml_string)))
     # ElementTree requries a file so use StringIO to turn the string into a file
     try:
-        TrustAnchorAsFile = StringIO(TrustAnchorXMLString)  # This works for Python 3
+        trust_anchor_as_file = StringIO(trust_anchor_xml_string)  # This works for Python 3
     except:
-        TrustAnchorAsFile = StringIO(unicode(TrustAnchorXMLString))  # Needed for Python 2
+        trust_anchor_as_file = StringIO(unicode(trust_anchor_xml_string))  # Needed for Python 2
     # Get the tree
-    TrustAnchorTree = xml.etree.ElementTree.ElementTree(file=TrustAnchorAsFile)
+    trust_anchor_tree = xml.etree.ElementTree.ElementTree(file=trust_anchor_as_file)
     # Get all the KeyDigest elements
-    DigestElements = TrustAnchorTree.findall(".//KeyDigest")
+    digest_elements = trust_anchor_tree.findall(".//KeyDigest")
     print("There were {} KeyDigest elements in the trust anchor file.".format(\
-        len(DigestElements)))
-    TrustAnchors = []  # Global list of dicts that is taken from the XML file
+        len(digest_elements)))
+    trust_anchors = []  # Global list of dicts that is taken from the XML file
     # Collect the values for the KeyDigest subelements and attributes
-    for (Count, ThisDigestElement) in enumerate(DigestElements):
-        DigestValueDict = {}
-        for ThisSubElement in ["KeyTag", "Algorithm", "DigestType", "Digest"]:
+    for (count, this_digest_element) in enumerate(digest_elements):
+        digest_value_dict = {}
+        for this_subelement in ["KeyTag", "Algorithm", "DigestType", "Digest"]:
             try:
-                ThisKeyTagText = (ThisDigestElement.find(ThisSubElement)).text
+                this_key_tag_text = (this_digest_element.find(this_subelement)).text
             except:
-                die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
-            DigestValueDict[ThisSubElement] = ThisKeyTagText
-        for ThisAttribute in ["validFrom", "validUntil"]:
-            if ThisAttribute in ThisDigestElement.keys():
-                DigestValueDict[ThisAttribute] = ThisDigestElement.attrib[ThisAttribute]
+                die("Did not find {} element in a KeyDigest in a trust anchor.".format(\
+                    this_subelement))
+            digest_value_dict[this_subelement] = this_key_tag_text
+        for this_attribute in ["validFrom", "validUntil"]:
+            if this_attribute in this_digest_element.keys():
+                digest_value_dict[this_attribute] = this_digest_element.attrib[this_attribute]
             else:
-                DigestValueDict[ThisAttribute] = ""  # Note that missing attributes get empty values
-        # Save this to the global TrustAnchors list
-        print("Added the trust anchor {} to the list:\n{}".format(Count, pprint.pformat(\
-            DigestValueDict)))
-        TrustAnchors.append(DigestValueDict)
-    if len(TrustAnchors) == 0:
+                digest_value_dict[this_attribute] = ""  # Missing attributes get empty values
+        # Save this to the global trust_anchors list
+        print("Added the trust anchor {} to the list:\n{}".format(count, pprint.pformat(\
+            digest_value_dict)))
+        trust_anchors.append(digest_value_dict)
+    if len(trust_anchors) == 0:
         die("There were no trust anchors found in the XML file.")
-    return TrustAnchors
+    return trust_anchors
 
 
-def get_valid_trust_anchors(TrustAnchors):
+def get_valid_trust_anchors(trust_anchors):
     """Takes a list of trust anchors; returns the list of trust anchors that are valid"""
-    ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
-    NowDateTime = datetime.datetime.now()
-    for (Count, ThisAnchor) in enumerate(TrustAnchors):
+    # Keep a list of just the valid trust anchors because some things are not going to go into it.
+    valid_trust_anchors = []
+    now_datetime = datetime.datetime.now()
+    for (count, this_anchor) in enumerate(trust_anchors):
         # Check the validity times; these only need to be accurate within a day or so
-        if ThisAnchor["validFrom"] == "":
-            print("Trust anchor {}: the validFrom attribute is empty,".format(Count),\
+        if this_anchor["validFrom"] == "":
+            print("Trust anchor {}: the validFrom attribute is empty,".format(count),\
                 "so not using this trust anchor.")
             continue
-        DigestElementValidFrom = ThisAnchor["validFrom"]
-        (FromLeft, _) = DigestElementValidFrom.split("T", 2)
-        (FromYear, FromMonth, FromDay) = FromLeft.split("-")
-        FromDateTime = datetime.datetime(int(FromYear), int(FromMonth), int(FromDay))
-        if NowDateTime < FromDateTime:
-            print("Trust anchor {}: the validFrom '{}' is later".format(Count, FromDateTime),\
+        digest_element_valid_from = this_anchor["validFrom"]
+        (from_left, _) = digest_element_valid_from.split("T", 2)
+        (from_year, from_month, from_day) = from_left.split("-")
+        from_date_time = datetime.datetime(int(from_year), int(from_month), int(from_day))
+        if now_datetime < from_date_time:
+            print("Trust anchor {}: the validFrom '{}' is later".format(count, from_date_time),\
                 "than today, so not using this trust anchor.")
             continue
-        if ThisAnchor["validUntil"] == "":
-            print("Trust anchor {}: there was no validUntil attribute, ".format(Count),\
+        if this_anchor["validUntil"] == "":
+            print("Trust anchor {}: there was no validUntil attribute, ".format(count),\
                 "so the validity is OK.")
-            ValidTrustAnchors.append(ThisAnchor)
+            valid_trust_anchors.append(this_anchor)
         else:
-            DigestElementValidUntil = ThisAnchor["validUntil"]
-            (UntilLeft, _) = DigestElementValidUntil.split("T", 2)
-            (UntilYear, UntilMonth, UntilDay) = UntilLeft.split("-")
-            UntilDateTime = datetime.datetime(int(UntilYear), int(UntilMonth), int(UntilDay))
-            if NowDateTime > UntilDateTime:
-                print("Trust anchor {}: the validUntil '{}' is before ".format(Count, UntilDateTime),\
-                    "today, so not using this trust anchor.")
+            digest_element_valid_until = this_anchor["validUntil"]
+            (until_left, _) = digest_element_valid_until.split("T", 2)
+            (until_year, until_month, until_day) = until_left.split("-")
+            until_date_time = datetime.datetime(int(until_year), int(until_month), int(until_day))
+            if now_datetime > until_date_time:
+                print("Trust anchor {}: the validUntil '{}' is before ".format(count,\
+                     until_date_time), "today, so not using this trust anchor.")
                 continue
             else:
-                print("Trust anchor {}: the validity period passes.".format(Count))
-                ValidTrustAnchors.append(ThisAnchor)
-    if len(ValidTrustAnchors) == 0:
+                print("Trust anchor {}: the validity period passes.".format(count))
+                valid_trust_anchors.append(this_anchor)
+    if len(valid_trust_anchors) == 0:
         die("After checking validity dates, there were no trust anchors left.")
-    print("After the date validity checks, there are now {} records.".format(len(ValidTrustAnchors)))
-    return ValidTrustAnchors
+    print("After the date validity checks, there are now {} records.".format(\
+        len(valid_trust_anchors)))
+    return valid_trust_anchors
 
 
-def get_matching_ksk(KSKRecords, ValidTrustAnchors):
+def get_matching_ksk(ksk_records, valid_trust_anchors):
     """Takes in a list of KSKs and a list of trust anchors; returns a list of the KSKs"""
-    MatchedKSKs = []
-    for ThisKSKRecord in KSKRecords:
+    matched_ksks = []
+    for this_ksk_record in ksk_records:
         try:
             # check base64 syntax
-            base64.b64decode(ThisKSKRecord["k"])
+            base64.b64decode(this_ksk_record["k"])
         except:
-            die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
-        for (Count, ThisTrustAnchor) in enumerate(ValidTrustAnchors):
-            HashAsHex = DNSKEYtoHexOfHash(ThisKSKRecord, ThisTrustAnchor["DigestType"])
-            if HashAsHex == ThisTrustAnchor["Digest"]:
-                print("Trust anchor {} matched KSK '{}...{}'".format(Count,\
-                    ThisKSKRecord["k"][0:15], ThisKSKRecord["k"][-15:]))
-                MatchedKSKs.append(ThisKSKRecord)
+            die("The KSK '{}...{}' had bad Base64.".format(\
+                this_ksk_record[0:15], this_ksk_record[-15:]))
+        for (count, this_trust_anchor) in enumerate(valid_trust_anchors):
+            hash_as_hex = dnskey_to_hex_of_hash(this_ksk_record, this_trust_anchor["DigestType"])
+            if hash_as_hex == this_trust_anchor["Digest"]:
+                print("Trust anchor {} matched KSK '{}...{}'".format(count,\
+                    this_ksk_record["k"][0:15], this_ksk_record["k"][-15:]))
+                matched_ksks.append(this_ksk_record)
                 break  # Don't check more trust anchors against this KSK
-    if len(MatchedKSKs) == 0:
+    if len(matched_ksks) == 0:
         die("After checking for trust anchor matches, there were no trusted KSKs.")
     else:
-        print("There were {} matched KSKs.".format(len(MatchedKSKs)))
-    return MatchedKSKs
+        print("There were {} matched KSKs.".format(len(matched_ksks)))
+    return matched_ksks
 
 
-def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
+def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
     """Takes a list of KSKs; returns nothing but writes out files"""
     ##############################
     # Still to do:
     #   BIND output formats
     ##############################
-    for ThisMatchedKSK in ValidKSKs:
+    for this_matched_ksk in valid_ksks:
         # Write out the DNSKEY
-        DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
-            flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
-            alg=ThisMatchedKSK["a"], keyas64=ThisMatchedKSK["k"])
-        WriteOutFile(DNSKEYRecordFileName, DNSKEYRecordContents)
+        dnskey_record_contents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
+            flags=this_matched_ksk["f"], proto=this_matched_ksk["p"],\
+            alg=this_matched_ksk["a"], keyas64=this_matched_ksk["k"])
+        write_out_file(dnskey_record_filename, dnskey_record_contents)
         # Write out the DS
-        HashAsHex = DNSKEYtoHexOfHash(ThisMatchedKSK, "2")  # Always do SHA256
+        hash_as_hex = dnskey_to_hex_of_hash(this_matched_ksk, "2")  # Always do SHA256
         # Calculate the keytag
-        TagBase = bytearray()
-        TagBase.extend(struct.pack("!HBB", int(ThisMatchedKSK["f"]), int(ThisMatchedKSK["p"]),\
-            int(ThisMatchedKSK["a"])))
-        KeyBytes = base64.b64decode(ThisMatchedKSK["k"])
-        TagBase.extend(KeyBytes)
-        Accumulator = 0
-        for (Counter, ThisByte) in enumerate(TagBase):
-            if (Counter % 2) == 0:
-                Accumulator += (ThisByte << 8)
+        tag_base = bytearray()
+        tag_base.extend(struct.pack("!HBB", int(this_matched_ksk["f"]), int(this_matched_ksk["p"]),\
+            int(this_matched_ksk["a"])))
+        key_bytes = base64.b64decode(this_matched_ksk["k"])
+        tag_base.extend(key_bytes)
+        accumulator = 0
+        for (counter, this_byte) in enumerate(tag_base):
+            if (counter % 2) == 0:
+                accumulator += (this_byte << 8)
             else:
-                Accumulator += ThisByte
-        ThisKeyTag = ((Accumulator & 0xFFFF) + (Accumulator>>16)) & 0xFFFF
-        print("The key tag for this KSK is {}".format(ThisKeyTag))
-        DSRecordContents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
-            keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
-            sha256ofkey=HashAsHex)
-        WriteOutFile(DSRecordFileName, DSRecordContents)
+                accumulator += this_byte
+        this_key_tag = ((accumulator & 0xFFFF) + (accumulator>>16)) & 0xFFFF
+        print("The key tag for this KSK is {}".format(this_key_tag))
+        ds_record_contents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
+            keytag=this_key_tag, alg=this_matched_ksk["a"],\
+            sha256ofkey=hash_as_hex)
+        write_out_file(ds_record_filename, ds_record_contents)
 
 
 def main():
@@ -377,72 +387,72 @@ def main():
     DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
     DS_RECORD_FILENAME = "ksk-as-ds.txt"
 
-    CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
-    CmdParse.add_argument("--local", dest="Local", type=str,\
+    cmd_parse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
+    cmd_parse.add_argument("--local", dest="local", type=str,\
         help="Name of local file to use instead of getting the trust anchor from the URL")
-    Opts = CmdParse.parse_args()
+    opts = cmd_parse.parse_args()
 
     # Make sure there is an "openssl" command in their shell path
-    WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
-    if WhichReturn != 0:
+    which_return = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
+    if which_return != 0:
         die("Could not find the 'openssl' command on this system.")
 
     ### Step 1. Fetch the trust anchor file from IANA using HTTPS
-    if Opts.Local:
-        if not os.path.exists(Opts.Local):
-            die("Could not find file {}.".format(Opts.Local))
+    if opts.local:
+        if not os.path.exists(opts.local):
+            die("Could not find file {}.".format(opts.local))
         try:
-            TrustAnchorXML = open(Opts.Local, mode="rt").read()
+            trust_anchor_xml = open(opts.local, mode="rt").read()
         except:
-            die("Could not read from file {}.".format(Opts.Local))
+            die("Could not read from file {}.".format(opts.local))
     else:
         # Get the trust anchor file from its URL, write it to disk
         try:
-            TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
+            trust_anchor_url = urlopen(URL_ROOT_ANCHORS)
         except Exception as e:
             die("Was not able to open URL {}. The returned text was '{}'.".format(\
                 URL_ROOT_ANCHORS, e))
-        TrustAnchorXML = TrustAnchorURL.read()
-        TrustAnchorURL.close()
-    WriteOutFile(TRUST_ANCHOR_FILENAME, TrustAnchorXML)
+        trust_anchor_xml = trust_anchor_url.read()
+        trust_anchor_url.close()
+    write_out_file(TRUST_ANCHOR_FILENAME, trust_anchor_xml)
 
     ### Step 2. Fetch the S/MIME signature for the trust anchor file from
     ### IANA using HTTPS. Get the signature file from its URL, write it to disk.
     try:
-        SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
+        signature_url = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
     except Exception as e:
         die("Was not able to open URL {}. returned text was '{}'.".format(\
             URL_ROOT_ANCHORS_SIGNATURE, e))
-    SignatureContents = SignatureURL.read()
-    SignatureURL.close()
-    WriteOutFile(SIGNATURE_FILENAME, SignatureContents)
+    signature_contents = signature_url.read()
+    signature_url.close()
+    write_out_file(SIGNATURE_FILENAME, signature_contents)
 
     ### Step 3. Validate the signature on the trust anchor file using a
     ### built-in IANA CA key. Skip this step if using a local file.
-    if Opts.Local:
+    if opts.local:
         print("Not validating the local trust anchor file.")
     else:
-        WriteOutFile(ICANN_CA_FILENAME, ICANN_ROOT_CA_CERT)
+        write_out_file(ICANN_CA_FILENAME, ICANN_ROOT_CA_CERT)
         validate_detached_signature(TRUST_ANCHOR_FILENAME, SIGNATURE_FILENAME, ICANN_CA_FILENAME)
-    
+
     ### Step 4. Extract the trust anchor key digests from the trust anchor file
-    TrustAnchors = extract_trust_anchors_from_xml(TrustAnchorXML)
-    
+    trust_anchors = extract_trust_anchors_from_xml(trust_anchor_xml)
+
     ### Step 5. Check the validity period for each digest
-    ValidTrustAnchors = get_valid_trust_anchors(TrustAnchors)
+    valid_trust_anchors = get_valid_trust_anchors(trust_anchors)
 
     ### Step 6. Verify that the trust anchors match the published KSKs
     ### file.
-    KSKRecords = fetch_ksk()
-    for key in KSKRecords:
+    ksk_records = fetch_ksk()
+    for key in ksk_records:
         print("Found KSK {flags} {proto} {alg} '{keystart}...{keyend}'.".format(\
             flags=key['f'], proto=key['p'], alg=key['a'],
             keystart=key['k'][0:15], keyend=key['k'][-15:]))
     # Go trough all the KSKs, decoding them and comparing them to all the trust anchors
-    MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
+    matched_ksks = get_matching_ksk(ksk_records, valid_trust_anchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
-    export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)		
+    export_ksk(matched_ksks, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
 
 if __name__ == "__main__":
     main()
