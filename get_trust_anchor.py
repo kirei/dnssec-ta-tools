@@ -441,7 +441,7 @@ def main():
     MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
-    WriteOutFile(DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
+    export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)		
 
 if __name__ == "__main__":
     main()
