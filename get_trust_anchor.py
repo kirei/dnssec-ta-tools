@@ -46,7 +46,7 @@ trust anchors are still cryptographically validated.
 from __future__ import print_function
 
 import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
-import pprint, re, hashlib, struct, argparse, json
+import pprint, re, hashlib, struct, argparse, json, unicode
 
 
 ICANN_ROOT_CA_CERT = '''
@@ -79,7 +79,7 @@ URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
 URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
 
-def Die(*Strings):
+def die(*Strings):
     """Generic way to leave the program early"""
     sys.stderr.write("".join(Strings) + " Exiting.\n")
     exit()
@@ -91,7 +91,7 @@ except:
     try:
         from urllib2 import urlopen
     except:
-        Die("Was not able to import urlopen from Python 2 or 3.")
+        die("Was not able to import urlopen from Python 2 or 3.")
 
 # Get the StringIO function from io (Python 3) or StringIO (Python 2)
 try:
@@ -100,7 +100,7 @@ except:
     try:
         from StringIO import StringIO
     except:
-        Die("Was not able to import StringIO from Python 2 or 3.")
+        die("Was not able to import StringIO from Python 2 or 3.")
 
 
 def BytesToString(ByteArray):
@@ -124,7 +124,7 @@ def WriteOutFile(FileName, FileContents):
             # It seems too wordy to say what got backed up.
             # print("Backed up {} to {}.".format(FileName, NowString+FileName))
         except:
-            Die("Failed to rename {} to {}.".format(FileName, NowString+FileName))
+            die("Failed to rename {} to {}.".format(FileName, NowString+FileName))
     # Pick the mode string based on the type of contents
     if isinstance(FileContents, str):
         Mode = "wt"
@@ -136,7 +136,7 @@ def WriteOutFile(FileName, FileContents):
         TrustAnchorFileObj.close()
         print("Saved file {}, length {}.".format(FileName, len(FileContents)))
     except:
-        Die("Could not write out the file {}.".format(FileName))
+        die("Could not write out the file {}.".format(FileName))
     return
 
 
@@ -147,7 +147,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
     elif HashType == "2":
         ThisHash = hashlib.sha256()
     else:
-        Die("A DNSKEY dict had a hash type of {}, which is unknown.".format(HashType))
+        die("A DNSKEY dict had a hash type of {}, which is unknown.".format(HashType))
     DigestContent = bytearray()
     DigestContent.append(0)  # Name of the zone, expressed in wire format
     DigestContent.extend(struct.pack("!HBB", int(DNSKEYdict["f"]),\
@@ -166,9 +166,9 @@ def fetch_ksk():
         print("Fetching via Google failed. Fetching via the root zone file...")
         ksks = fetch_ksk_from_zonefile()
         if ksks == None:
-            Die("Could not fetch the KSKs from Google nor get the root zone file.")
+            die("Could not fetch the KSKs from Google nor get the root zone file.")
     if len(ksks) == 0:
-        Die("No KSKs were found.")
+        die("No KSKs were found.")
     return ksks
 
 
@@ -221,7 +221,7 @@ def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName)
         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (ValidOut, ValidErr) = ValidatePopen.communicate()
     if ValidatePopen.returncode != 0:
-        Die("When running openssl, the return code was {} ".format(ValidatePopen.returncode),\
+        die("When running openssl, the return code was {} ".format(ValidatePopen.returncode),\
             "and the output was the following.\n{}".format(ValidOut))
     else:
         print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
@@ -234,8 +234,7 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
     TrustAnchorXMLString = BytesToString(TrustAnchorXML)
     # Sanity check: make sure there is enough text in the returned stuff
     if len(TrustAnchorXMLString) < 100:
-        Die("The text returned from getting {} was too short: '{}'.".format(\
-            TrustAnchorURL, TrustAnchorXMLString))
+        die("The text returned from getting {} was too short: '{}'.".format(TrustAnchorXMLString))
     # ElementTree requries a file so use StringIO to turn the string into a file
     try:
         TrustAnchorAsFile = StringIO(TrustAnchorXMLString)  # This works for Python 3
@@ -255,7 +254,7 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
             try:
                 ThisKeyTagText = (ThisDigestElement.find(ThisSubElement)).text
             except:
-                Die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
+                die("Did not find {} element in a KeyDigest in a trust anchor.".format(ThisSubElement))
             DigestValueDict[ThisSubElement] = ThisKeyTagText
         for ThisAttribute in ["validFrom", "validUntil"]:
             if ThisAttribute in ThisDigestElement.keys():
@@ -267,7 +266,7 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
             DigestValueDict)))
         TrustAnchors.append(DigestValueDict)
     if len(TrustAnchors) == 0:
-        Die("There were no trust anchors found in the XML file.")
+        die("There were no trust anchors found in the XML file.")
     return TrustAnchors
 
 
@@ -306,7 +305,7 @@ def get_valid_trust_anchors(TrustAnchors):
                 print("Trust anchor {}: the validity period passes.".format(Count))
                 ValidTrustAnchors.append(ThisAnchor)
     if len(ValidTrustAnchors) == 0:
-        Die("After checking validity dates, there were no trust anchors left.")
+        die("After checking validity dates, there were no trust anchors left.")
     print("After the date validity checks, there are now {} records.".format(len(ValidTrustAnchors)))
     return ValidTrustAnchors
 
@@ -318,7 +317,7 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
         try:
             KeyBytes = base64.b64decode(ThisKSKRecord["k"])
         except:
-            Die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
+            die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
         for (Count, ThisTrustAnchor) in enumerate(ValidTrustAnchors):
             HashAsHex = DNSKEYtoHexOfHash(ThisKSKRecord, ThisTrustAnchor["DigestType"])
             if HashAsHex == ThisTrustAnchor["Digest"]:
@@ -327,7 +326,7 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
                 MatchedKSKs.append(ThisKSKRecord)
                 break  # Don't check more trust anchors against this KSK
     if len(MatchedKSKs) == 0:
-        Die("After checking for trust anchor matches, there were no trusted KSKs.")
+        die("After checking for trust anchor matches, there were no trusted KSKs.")
     else:
         print("There were {} matched KSKs.".format(len(MatchedKSKs)))
     return MatchedKSKs
@@ -370,36 +369,37 @@ def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
 def main():
     """Main function"""
 
-    CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
-    CmdParse.add_argument("--local", dest="Local", type=str,\
-        help="Name of local file to use instead of getting the trust anchor from the URL")
-    Opts = CmdParse.parse_args()
-
+    # Where the files we create are kept
     TRUST_ANCHOR_FILENAME = "root-anchors.xml"
     SIGNATURE_FILENAME = "root-anchors.p7s"
     ICANN_CA_FILENAME = "icanncacert.pem"
     DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
     DS_RECORD_FILENAME = "ksk-as-ds.txt"
 
+    CmdParse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
+    CmdParse.add_argument("--local", dest="Local", type=str,\
+        help="Name of local file to use instead of getting the trust anchor from the URL")
+    Opts = CmdParse.parse_args()
+
     # Make sure there is an "openssl" command in their shell path
     WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
     if WhichReturn != 0:
-        Die("Could not find the 'openssl' command on this system.")
+        die("Could not find the 'openssl' command on this system.")
 
     ### Step 1. Fetch the trust anchor file from IANA using HTTPS
     if Opts.Local:
         if not os.path.exists(Opts.Local):
-            Die("Could not find file {}.".format(Opts.Local))
+            die("Could not find file {}.".format(Opts.Local))
         try:
             TrustAnchorXML = open(Opts.Local, mode="rt").read()
         except:
-            Die("Could not read from file {}.".format(Opts.Local))
+            die("Could not read from file {}.".format(Opts.Local))
     else:
         # Get the trust anchor file from its URL, write it to disk
         try:
             TrustAnchorURL = urlopen(URL_ROOT_ANCHORS)
         except Exception as e:
-            Die("Was not able to open URL {}. The returned text was '{}'.".format(\
+            die("Was not able to open URL {}. The returned text was '{}'.".format(\
                 URL_ROOT_ANCHORS, e))
         TrustAnchorXML = TrustAnchorURL.read()
         TrustAnchorURL.close()
@@ -410,7 +410,7 @@ def main():
     try:
         SignatureURL = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
     except Exception as e:
-        Die("Was not able to open URL {}. returned text was '{}'.".format(\
+        die("Was not able to open URL {}. returned text was '{}'.".format(\
             URL_ROOT_ANCHORS_SIGNATURE, e))
     SignatureContents = SignatureURL.read()
     SignatureURL.close()
