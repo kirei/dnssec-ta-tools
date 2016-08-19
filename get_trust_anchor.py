@@ -78,10 +78,6 @@ URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7
 URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
 URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
-NowDateTime = datetime.datetime.now()
-# Date string used for backup file names
-NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
-
 
 def Die(*Strings):
     """Generic way to leave the program early"""
@@ -121,6 +117,8 @@ def WriteOutFile(FileName, FileContents):
         Writes out a file that we got from a URL or string; backs up the file if it exists."""
     # Back up the current one if it is there
     if os.path.exists(FileName):
+        NowDateTime = datetime.datetime.now()
+        NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
         try:
             os.rename(FileName, NowString+FileName)
             # It seems too wordy to say what got backed up.
@@ -276,6 +274,7 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
 def get_valid_trust_anchors(TrustAnchors):
     """Takes a list of trust anchors; returns the list of trust anchors that are valid"""
     ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
+    NowDateTime = datetime.datetime.now()
     for (Count, ThisAnchor) in enumerate(TrustAnchors):
         # Check the validity times; these only need to be accurate within a day or so
         if ThisAnchor["validFrom"] == "":
