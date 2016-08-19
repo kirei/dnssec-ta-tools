@@ -73,6 +73,10 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 -----END CERTIFICATE-----
 '''
 
+NowDateTime = datetime.datetime.now()
+# Date string used for backup file names
+NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
+
 
 def Die(*Strings):
     """Generic way to leave the program early"""
@@ -325,7 +329,7 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
     return MatchedKSKs
 
 
-def export_ksks(ValidKSKs):
+def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
     """Takes a list of KSKs; returns nothing but writes out files"""
     ##############################
     # Still to do:
@@ -336,7 +340,7 @@ def export_ksks(ValidKSKs):
         DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
             flags=ThisMatchedKSK["f"], proto=ThisMatchedKSK["p"],\
             alg=ThisMatchedKSK["a"], keyas64=ThisMatchedKSK["k"])
-        WriteOutFile(DNSKEY_RECORD_FILENAME, DNSKEYRecordContents)
+        WriteOutFile(DNSKEYRecordFileName, DNSKEYRecordContents)
         # Write out the DS
         HashAsHex = DNSKEYtoHexOfHash(ThisMatchedKSK, "2")  # Always do SHA256
         # Calculate the keytag
@@ -356,7 +360,7 @@ def export_ksks(ValidKSKs):
         DSRecordContents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
             keytag=ThisKeyTag, alg=ThisMatchedKSK["a"],\
             sha256ofkey=HashAsHex)
-        WriteOutFile(DS_RECORD_FILENAME, DSRecordContents)
+        WriteOutFile(DSRecordFileName, DSRecordContents)
 
 
 def main():
@@ -377,10 +381,6 @@ def main():
     URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
     URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
     URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
-
-    NowDateTime = datetime.datetime.now()
-    # Date string used for backup file names
-    NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
 
     # Make sure there is an "openssl" command in their shell path
     WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
@@ -442,8 +442,7 @@ def main():
     MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
-    export_ksks(MatchedKSKs)
-
+    WriteOutFile(DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
 
 if __name__ == "__main__":
     main()
