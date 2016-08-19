@@ -73,6 +73,11 @@ j/Br5BZw3X/zd325TvnswzMC1+ljLzHnQGGk
 -----END CERTIFICATE-----
 '''
 
+URL_ROOT_ANCHORS = "https://data.iana.org/root-anchors/root-anchors.xml"
+URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
+URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
+URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
+
 NowDateTime = datetime.datetime.now()
 # Date string used for backup file names
 NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
@@ -376,11 +381,6 @@ def main():
     ICANN_CA_FILENAME = "icanncacert.pem"
     DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
     DS_RECORD_FILENAME = "ksk-as-ds.txt"
-
-    URL_ROOT_ANCHORS = "https://data.iana.org/root-anchors/root-anchors.xml"
-    URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7s"
-    URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
-    URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
     # Make sure there is an "openssl" command in their shell path
     WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
