@@ -316,7 +316,8 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
     MatchedKSKs = []
     for ThisKSKRecord in KSKRecords:
         try:
-            KeyBytes = base64.b64decode(ThisKSKRecord["k"])
+            # check base64 syntax
+            base64.b64decode(ThisKSKRecord["k"])
         except:
             Die("The KSK '{}...{}' had bad Base64.".format(ThisKSKRecord[0:15], ThisKSKRecord[-15:]))
         for (Count, ThisTrustAnchor) in enumerate(ValidTrustAnchors):
