@@ -45,13 +45,6 @@ trust anchors are still cryptographically validated.
 
 from __future__ import print_function
 
-################# Still to do:
-
-# BIND output formats
-
-##############################
-
-
 import os, sys, datetime, base64, subprocess, codecs, xml.etree.ElementTree
 import pprint, re, hashlib, struct, argparse, json
 
@@ -85,10 +78,6 @@ URL_ROOT_ANCHORS_SIGNATURE = "https://data.iana.org/root-anchors/root-anchors.p7
 URL_ROOT_ZONE = "https://www.internic.net/domain/root.zone"
 URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 
-NowDateTime = datetime.datetime.now()
-# Date string used for backup file names
-NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
-
 
 def Die(*Strings):
     """Generic way to leave the program early"""
@@ -116,7 +105,7 @@ except:
 
 def BytesToString(ByteArray):
     """Convert bytes that are in ASCII into strings.
-    This is used for content received over URLs."""
+        This is used for content received over URLs."""
     if isinstance(ByteArray, str):
         return str(ByteArray)
     ASCIICodec = codecs.lookup("ascii")
@@ -124,11 +113,12 @@ def BytesToString(ByteArray):
 
 
 def WriteOutFile(FileName, FileContents):
-    """Write out a file that we got from a URL or string.
-    Back up the file if it exists.
-    There is no return value."""
+    """Takes a name of a file and string or bytearray; returns nothing.
+        Writes out a file that we got from a URL or string; backs up the file if it exists."""
     # Back up the current one if it is there
     if os.path.exists(FileName):
+        NowDateTime = datetime.datetime.now()
+        NowString = "backed-up-at-" + NowDateTime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
         try:
             os.rename(FileName, NowString+FileName)
             # It seems too wordy to say what got backed up.
@@ -151,7 +141,7 @@ def WriteOutFile(FileName, FileContents):
 
 
 def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
-    """Takes a DNSKEY dict and hash type (string), and returns the hex of the hash"""
+    """Takes a DNSKEY dict and hash type (string), and returns the hex of the hash as a string"""
     if HashType == "1":
         ThisHash = hashlib.sha1()
     elif HashType == "2":
@@ -169,7 +159,7 @@ def DNSKEYtoHexOfHash(DNSKEYdict, HashType):
 
 
 def fetch_ksk():
-    """Get the KSKs, or die if they can't be found in via Google nor the zone file"""
+    """Return the KSKs, or die if they can't be found in via Google nor the zone file"""
     print("Fetching via Google...")
     ksks = fetch_ksk_from_google()
     if ksks == None:
@@ -183,7 +173,7 @@ def fetch_ksk():
 
 
 def fetch_ksk_from_google():
-    """Fetch root KSK via Google DNS-over-HTTPS"""
+    """Return the root KSK via Google DNS-over-HTTPS. Returns None if there are errors."""
     ksks = []
     try:
         url = urlopen(URL_RESOLVER_API)
@@ -205,7 +195,7 @@ def fetch_ksk_from_google():
 
 
 def fetch_ksk_from_zonefile():
-    """Fetch root KSK from the root zone file"""
+    """Rethurn the root KSK from the root zone file. Returns None if there are errors."""
     ksks = []
     try:
         url = urlopen(URL_ROOT_ZONE)
@@ -222,11 +212,8 @@ def fetch_ksk_from_zonefile():
 
 
 def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName):
-    """Validate a detached S/MIME signature"""
-    # Make sure there is an "openssl" command in their shell path
-    WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
-    if WhichReturn != 0:
-        Die("Could not find the 'openssl' command on this system.")
+    """Takes the name of the contents file, the signature file, and CA file;
+        returns nothing if sucessful or dies if openssl returns an error."""
     # Run openssl to validate the signature
     ValidateCommand = "openssl smime -verify -CAfile {ca} -inform der -in {sig} -content {cont}"
     ValidatePopen = subprocess.Popen(ValidateCommand.format(\
@@ -242,7 +229,7 @@ def validate_detached_signature(ContentsFilename, SignatureFileName, CAFileName)
 
 
 def extract_trust_anchors_from_xml(TrustAnchorXML):
-    """Extract the trust anchor key digests from the trust anchor file"""
+    """Takes a bytestring with the XML from IANA; returns a list of trust anchors."""
     # Turn the bytes from TrustAnchorXML into a string
     TrustAnchorXMLString = BytesToString(TrustAnchorXML)
     # Sanity check: make sure there is enough text in the returned stuff
@@ -285,8 +272,9 @@ def extract_trust_anchors_from_xml(TrustAnchorXML):
 
 
 def get_valid_trust_anchors(TrustAnchors):
-    """Get currently valid trust anchors"""
+    """Takes a list of trust anchors; returns the list of trust anchors that are valid"""
     ValidTrustAnchors = []  # Keep a separate list because some things are not going to go into it.
+    NowDateTime = datetime.datetime.now()
     for (Count, ThisAnchor) in enumerate(TrustAnchors):
         # Check the validity times; these only need to be accurate within a day or so
         if ThisAnchor["validFrom"] == "":
@@ -324,6 +312,7 @@ def get_valid_trust_anchors(TrustAnchors):
 
 
 def get_matching_ksk(KSKRecords, ValidTrustAnchors):
+    """Takes in a list of KSKs and a list of trust anchors; returns a list of the KSKs"""
     MatchedKSKs = []
     for ThisKSKRecord in KSKRecords:
         try:
@@ -345,6 +334,11 @@ def get_matching_ksk(KSKRecords, ValidTrustAnchors):
 
 
 def export_ksk(ValidKSKs, DSRecordFileName, DNSKEYRecordFileName):
+    """Takes a list of KSKs; returns nothing but writes out files"""
+    ##############################
+    # Still to do:
+    #   BIND output formats
+    ##############################
     for ThisMatchedKSK in ValidKSKs:
         # Write out the DNSKEY
         DNSKEYRecordContents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
@@ -386,6 +380,11 @@ def main():
     ICANN_CA_FILENAME = "icanncacert.pem"
     DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
     DS_RECORD_FILENAME = "ksk-as-ds.txt"
+
+    # Make sure there is an "openssl" command in their shell path
+    WhichReturn = subprocess.call("which openssl", shell=True, stdout=subprocess.PIPE)
+    if WhichReturn != 0:
+        Die("Could not find the 'openssl' command on this system.")
 
     ### Step 1. Fetch the trust anchor file from IANA using HTTPS
     if Opts.Local:
@@ -442,8 +441,7 @@ def main():
     MatchedKSKs = get_matching_ksk(KSKRecords, ValidTrustAnchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
-    export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
-
+    export_ksk(MatchedKSKs, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)		
 
 if __name__ == "__main__":
     main()
