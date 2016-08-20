@@ -95,13 +95,13 @@ def die(*Strings):
     sys.stderr.write("".join(Strings) + " Exiting.\n")
     exit()
 
-python_major = int(sys.version_info[0])
-python_minor = int(sys.version_info[1])
-if (python_major == 2) and (python_minor != 7):
+PYTHON_MAJOR = int(sys.version_info[0])
+PYTHON_MINOR = int(sys.version_info[1])
+if (PYTHON_MAJOR == 2) and (PYTHON_MINOR != 7):
     die("If this program is running in Python 2, it must be Python 2.7.")
 
 # Get the urlopen and StringIO functions
-if python_major == 2:
+if PYTHON_MAJOR == 2:
     from urllib2 import urlopen
     from StringIO import StringIO
 else:
