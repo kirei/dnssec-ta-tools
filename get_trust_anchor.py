@@ -127,8 +127,6 @@ def write_out_file(file_name, file_contents):
         now_string = "backed-up-at-" + now_datetime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
         try:
             os.rename(file_name, now_string+file_name)
-            # It seems too wordy to say what got backed up.
-            # print("Backed up {} to {}.".format(file_name, now_string+file_name))
         except:
             die("Failed to rename {} to {}.".format(file_name, now_string+file_name))
     # Pick the mode string based on the type of contents
@@ -183,14 +181,15 @@ def fetch_ksk_from_google():
     ksks = []
     try:
         url = urlopen(URL_RESOLVER_API)
-    except Exception as e:
+    except Exception as this_exception:
         print("Was not able to open URL {}. The returned text was '{}'.".format(\
-            URL_RESOLVER_API, e))
+            URL_RESOLVER_API, this_exception))
         return None
     try:
         data = json.loads(url.read().decode('utf-8'))
-    except Exception as e:
-        print("The JSON returned from Google DNS-over-HTTPS was not readable: {}".format(e))
+    except Exception as this_exception:
+        print("The JSON returned from Google DNS-over-HTTPS was not readable: {}".format(\
+            this_exception))
         return None
     for answer in data['Answer']:
         if answer['type'] == 48:
@@ -205,9 +204,9 @@ def fetch_ksk_from_zonefile():
     ksks = []
     try:
         url = urlopen(URL_ROOT_ZONE)
-    except Exception as e:
+    except Exception as this_exception:
         print("Was not able to open URL {}. The returned text was '{}'.".format(\
-            URL_ROOT_ZONE, e))
+            URL_ROOT_ZONE, this_exception))
         return None
     for line in url.read().decode('utf-8').split('\n'):
         if "DNSKEY\t" in line:
@@ -381,11 +380,11 @@ def main():
     """Main function"""
 
     # Where the files we create are kept
-    TRUST_ANCHOR_FILENAME = "root-anchors.xml"
-    SIGNATURE_FILENAME = "root-anchors.p7s"
-    ICANN_CA_FILENAME = "icanncacert.pem"
-    DNSKEY_RECORD_FILENAME = "ksk-as-dnskey.txt"
-    DS_RECORD_FILENAME = "ksk-as-ds.txt"
+    trust_anchor_filename = "root-anchors.xml"
+    signature_filename = "root-anchors.p7s"
+    icann_ca_filename = "icanncacert.pem"
+    dnskey_record_filename = "ksk-as-dnskey.txt"
+    ds_record_filename = "ksk-as-ds.txt"
 
     cmd_parse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
     cmd_parse.add_argument("--local", dest="local", type=str,\
@@ -409,31 +408,31 @@ def main():
         # Get the trust anchor file from its URL, write it to disk
         try:
             trust_anchor_url = urlopen(URL_ROOT_ANCHORS)
-        except Exception as e:
+        except Exception as this_exception:
             die("Was not able to open URL {}. The returned text was '{}'.".format(\
-                URL_ROOT_ANCHORS, e))
+                URL_ROOT_ANCHORS, this_exception))
         trust_anchor_xml = trust_anchor_url.read()
         trust_anchor_url.close()
-    write_out_file(TRUST_ANCHOR_FILENAME, trust_anchor_xml)
+    write_out_file(trust_anchor_filename, trust_anchor_xml)
 
     ### Step 2. Fetch the S/MIME signature for the trust anchor file from
     ### IANA using HTTPS. Get the signature file from its URL, write it to disk.
     try:
         signature_url = urlopen(URL_ROOT_ANCHORS_SIGNATURE)
-    except Exception as e:
+    except Exception as this_exception:
         die("Was not able to open URL {}. returned text was '{}'.".format(\
-            URL_ROOT_ANCHORS_SIGNATURE, e))
+            URL_ROOT_ANCHORS_SIGNATURE, this_exception))
     signature_contents = signature_url.read()
     signature_url.close()
-    write_out_file(SIGNATURE_FILENAME, signature_contents)
+    write_out_file(signature_filename, signature_contents)
 
     ### Step 3. Validate the signature on the trust anchor file using a
     ### built-in IANA CA key. Skip this step if using a local file.
     if opts.local:
         print("Not validating the local trust anchor file.")
     else:
-        write_out_file(ICANN_CA_FILENAME, ICANN_ROOT_CA_CERT)
-        validate_detached_signature(TRUST_ANCHOR_FILENAME, SIGNATURE_FILENAME, ICANN_CA_FILENAME)
+        write_out_file(icann_ca_filename, ICANN_ROOT_CA_CERT)
+        validate_detached_signature(trust_anchor_filename, signature_filename, icann_ca_filename)
 
     ### Step 4. Extract the trust anchor key digests from the trust anchor file
     trust_anchors = extract_trust_anchors_from_xml(trust_anchor_xml)
@@ -452,7 +451,7 @@ def main():
     matched_ksks = get_matching_ksk(ksk_records, valid_trust_anchors)
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
-    export_ksk(matched_ksks, DS_RECORD_FILENAME, DNSKEY_RECORD_FILENAME)
+    export_ksk(matched_ksks, ds_record_filename, dnskey_record_filename)
 
 if __name__ == "__main__":
     main()
