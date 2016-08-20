@@ -1,4 +1,4 @@
-SCRIPT=		dnssec_ta_tool.py csr2dnskey.py
+SCRIPT=		dnssec_ta_tool.py csr2dnskey.py get_trust_anchor.py
 
 VENV2=		venv2
 VENV3=		venv3
@@ -24,7 +24,6 @@ ANCHORS=	root-anchors.xml test-anchors.xml
 all:
 	
 lint:
-	#pep8 --max-line-length=132 $(SCRIPT)
 	pylint --reports=no -d line-too-long $(SCRIPT)
 
 venv: $(VENV2) $(VENV2)
