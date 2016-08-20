@@ -93,7 +93,7 @@ URL_RESOLVER_API = "https://dns.google.com/resolve?name=.&type=dnskey"
 def die(*Strings):
     """Generic way to leave the program early"""
     sys.stderr.write("".join(Strings) + " Exiting.\n")
-    exit()
+    exit(1)
 
 PYTHON_MAJOR = int(sys.version_info[0])
 PYTHON_MINOR = int(sys.version_info[1])
