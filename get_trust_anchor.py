@@ -43,9 +43,10 @@ URL. This means that even if HTTPS authentication checking isn't done, the resul
 trust anchors are still cryptographically validated.
 """
 
+# pylint: disable=wrong-import-order,wrong-import-position,import-error,no-name-in-module,broad-except,bare-except,too-many-locals
+
 from __future__ import print_function
 
-import argparse
 import base64
 import codecs
 import datetime
@@ -58,6 +59,7 @@ import struct
 import subprocess
 import sys
 import xml.etree.ElementTree
+import argparse
 
 
 ICANN_ROOT_CA_CERT = '''
