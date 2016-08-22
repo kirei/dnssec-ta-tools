@@ -27,7 +27,7 @@ all:
 lint:
 	$(VENV3)/bin/pylint --reports=no $(SCRIPT3)
 
-venv: $(VENV2) $(VENV2)
+venv: $(VENV2) $(VENV3)
 
 $(VENV2):
 	virtualenv -p $(PYTHON2) $(VENV2)
