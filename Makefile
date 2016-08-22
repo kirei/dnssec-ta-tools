@@ -7,7 +7,7 @@ VENV3=		venv3
 PYTHON2=	python2.7
 PYTHON3=	python3.5
 
-MODULES3=	pylint iso8601 xmltodict dnspython pyOpenSSL pyCrypto
+MODULES3=	pylint iso8601 xmltodict dnspython pycryptodomex pyOpenSSL
 
 TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem \
 		icanncacert.pem \

@@ -34,8 +34,8 @@ import base64
 import dns.dnssec
 import dns.rdata
 from OpenSSL.crypto import load_certificate_request, dump_publickey, FILETYPE_ASN1
-from Crypto.PublicKey import RSA
-import Crypto.Util.number
+from Cryptodome.PublicKey import RSA
+import Cryptodome.Util.number
 
 RR_OID = "1.3.6.1.4.1.1000.53"
 
@@ -85,8 +85,8 @@ def ds_digest_type_as_text(digest_type):
 def get_rsa_b64_from_der(public_key_der):
     """Get base64 encoded RSA from public key DER sequence"""
     public_key_rsa = RSA.importKey(public_key_der)
-    rsa_bytes_n = Crypto.Util.number.long_to_bytes(public_key_rsa.n)
-    rsa_bytes_e = Crypto.Util.number.long_to_bytes(public_key_rsa.e)
+    rsa_bytes_n = Cryptodome.Util.number.long_to_bytes(public_key_rsa.n)
+    rsa_bytes_e = Cryptodome.Util.number.long_to_bytes(public_key_rsa.e)
     keydata = bytearray()
     keydata.append(len(rsa_bytes_e))
     keydata.extend(rsa_bytes_e)
