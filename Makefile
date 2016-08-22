@@ -1,4 +1,5 @@
-SCRIPT=		dnssec_ta_tool.py csr2dnskey.py get_trust_anchor.py
+SCRIPT2=	get_trust_anchor.py
+SCRIPT3=	get_trust_anchor.py dnssec_ta_tool.py csr2dnskey.py
 
 VENV2=		venv2
 VENV3=		venv3
@@ -24,7 +25,7 @@ ANCHORS=	root-anchors.xml test-anchors.xml
 all:
 	
 lint:
-	pylint --reports=no $(SCRIPT)
+	$(VENV3)/bin/pylint --reports=no $(SCRIPT3)
 
 venv: $(VENV2) $(VENV2)
 
