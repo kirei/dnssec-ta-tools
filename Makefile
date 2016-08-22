@@ -24,7 +24,7 @@ ANCHORS=	root-anchors.xml test-anchors.xml
 all:
 	
 lint:
-	pylint --reports=no -d line-too-long $(SCRIPT)
+	pylint --reports=no $(SCRIPT)
 
 venv: $(VENV2) $(VENV2)
 
