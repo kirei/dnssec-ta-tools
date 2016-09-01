@@ -392,7 +392,7 @@ def main():
     cmd_parse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
     cmd_parse.add_argument("--local", dest="local", type=str,\
         help="Name of local file to use instead of getting the trust anchor from the URL")
-    cmd_parse.add_argument("--keep_temp", dest="keep_temp", action='store_true',\
+    cmd_parse.add_argument("--keep", dest="keep", action='store_true',\
         help="Keep the temporary files (the XML and validating signature")
     opts = cmd_parse.parse_args()
 
@@ -458,7 +458,7 @@ def main():
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
     export_ksk(matched_ksks, ds_record_filename, dnskey_record_filename)
     # Delete the temporary files unless requested not to
-    if not(opts.local) and not(opts.keep_temp):
+    if not(opts.local) and not(opts.keep):
         for this_file in temp_files:
             if os.path.exists(this_file):
                 try:
