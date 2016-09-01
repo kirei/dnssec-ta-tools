@@ -4,6 +4,12 @@ This repository contains utilities to process DNS trust anchors formatted in XML
 
 [![Build Status](https://api.travis-ci.org/kirei/dnssec-ta-tools.png)](https://travis-ci.org/kirei/dnssec-ta-tools)
 
+## Programs
+
+- **get\_trust\_anchor.py** writes out a copy of the current DNSSEC trust anchor. Signature validation IS performed by this tool.
+- **dnssec\_ta\_tool.py** will extract DNSSEC Trust Anchors from a Trust Anchor XML file formatted as described in [RFC 7958](https://www.rfc-editor.org/rfc/rfc7958.txt). Validation of the detached signature over the Trust Anchor XML file IS NOT performed by this tool.
+- **csr2dnskey.py** extracts a DNSKEY from a Certificate Signing Request as described in [RFC 7958](https://www.rfc-editor.org/rfc/rfc7958.txt).
+
 ## Example Usage
 
 ### Fetch and Verify Root Trust Anchor
