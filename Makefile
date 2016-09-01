@@ -78,7 +78,10 @@ test3: $(VENV3) $(ANCHORS) $(CSR)
 	diff -u $(KNOWN_GOOD)/ksk-as-dnskey.txt ksk-as-dnskey.txt
 	diff -u $(KNOWN_GOOD)/ksk-as-ds.txt ksk-as-ds.txt
 
-travis:
+travis2:
+	python -m py_compile get_trust_anchor.py
+
+travis3:
 	python -m py_compile get_trust_anchor.py
 	python dnssec_ta_tool.py \
 		--verbose \
