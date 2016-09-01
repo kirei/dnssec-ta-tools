@@ -2,6 +2,8 @@
 
 This repository contains utilities to process DNS trust anchors formatted in XML.
 
+[![Build Status](https://api.travis-ci.org/kirei/dnssec-ta-tools.png)](https://travis-ci.org/kirei/dnssec-ta-tools)
+
 ## Example Usage
 
 ### Fetch and Verify Root TA
