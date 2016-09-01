@@ -385,12 +385,15 @@ def main():
     trust_anchor_filename = "root-anchors.xml"
     signature_filename = "root-anchors.p7s"
     icann_ca_filename = "icanncacert.pem"
+    temp_files = [trust_anchor_filename, signature_filename, icann_ca_filename]
     dnskey_record_filename = "ksk-as-dnskey.txt"
     ds_record_filename = "ksk-as-ds.txt"
 
     cmd_parse = argparse.ArgumentParser(description="DNSSEC Trust Anchor Tool")
     cmd_parse.add_argument("--local", dest="local", type=str,\
         help="Name of local file to use instead of getting the trust anchor from the URL")
+    cmd_parse.add_argument("--keep", dest="keep", action='store_true',\
+        help="Keep the temporary files (the XML and validating signature")
     opts = cmd_parse.parse_args()
 
     # Make sure there is an "openssl" command in their shell path
@@ -454,6 +457,14 @@ def main():
 
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
     export_ksk(matched_ksks, ds_record_filename, dnskey_record_filename)
+    # Delete the temporary files unless requested not to
+    if not(opts.local) and not(opts.keep):
+        for this_file in temp_files:
+            if os.path.exists(this_file):
+                try:
+                    os.unlink(this_file)
+                except Exception as this_exception:
+                    print("Could not delete {}: '{}'. Continuing".format(this_file, this_exception))
 
 if __name__ == "__main__":
     main()
