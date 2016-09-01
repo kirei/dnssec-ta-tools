@@ -24,7 +24,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-DNSSEC Trust Anchor Tool
+DNSSEC Trust Anchor Fetcher (get_trust_anchor.py)
+
 This tool writes out a copy of the current DNSSEC trust anchor.
     The primary design goal for this software is that it should be able to be run on any system
     that has just Python (either 2.7 or 3.x) and the OpenSSL command line tool.
