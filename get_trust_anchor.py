@@ -125,12 +125,12 @@ def write_out_file(file_name, file_contents):
         Writes out a file that we got from a URL or string; backs up the file if it exists."""
     # Back up the current one if it is there
     if os.path.exists(file_name):
-        now_datetime = datetime.datetime.now()
-        now_string = "backed-up-at-" + now_datetime.strftime("%Y-%m-%d-%H-%M-%S") + "-"
+        now_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file_name = "{}.backup_{}".format(file_name, now_timestamp)
         try:
-            os.rename(file_name, now_string+file_name)
+            os.rename(file_name, backup_file_name)
         except:
-            die("Failed to rename {} to {}.".format(file_name, now_string+file_name))
+            die("Failed to rename {} to {}.".format(file_name, backup_file_name))
     # Pick the mode string based on the type of contents
     if isinstance(file_contents, str):
         filemode = "wt"

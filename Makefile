@@ -99,4 +99,4 @@ realclean: clean
 clean:
 	rm -f $(TMPFILES)
 	rm -f $(CSR)
-	rm -f backed-up-at-*
+	rm -f *.backup_*
