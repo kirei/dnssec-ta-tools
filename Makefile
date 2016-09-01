@@ -16,6 +16,7 @@ TMPFILES=	root-anchors.xml root-anchors.p7s icannbundle.pem \
 		root-anchors.{ds,dnskey} \
 		ksk-as-{dnskey,ds}.txt root.zone
 
+KNOWN_DATA=	regress/known_data
 KNOWN_GOOD=	regress/known_good
 
 KEYID=		Kjqmt7v
@@ -35,6 +36,9 @@ $(VENV2):
 $(VENV3):
 	virtualenv -p $(PYTHON3) $(VENV3)
 	$(VENV3)/bin/pip install $(MODULES3)
+
+pip3:
+	pip install --user $(MODULES3)
 
 demo: $(VENV3) root-anchors.xml
 	$(VENV3)/bin/python dnssec_ta_tool.py --format dnskey --verbose
@@ -73,6 +77,24 @@ test3: $(VENV3) $(ANCHORS) $(CSR)
 	$(VENV3)/bin/python get_trust_anchor.py
 	diff -u $(KNOWN_GOOD)/ksk-as-dnskey.txt ksk-as-dnskey.txt
 	diff -u $(KNOWN_GOOD)/ksk-as-ds.txt ksk-as-ds.txt
+
+travis:
+	python dnssec_ta_tool.py \
+		--verbose \
+		--format dnskey \
+		--anchors test-anchors.xml \
+		--output test-anchors.dnskey
+	diff -u $(KNOWN_GOOD)/test-anchors.dnskey test-anchors.dnskey
+	python dnssec_ta_tool.py \
+		--verbose \
+		--format ds \
+		--anchors test-anchors.xml \
+		--output test-anchors.ds
+	diff -u $(KNOWN_GOOD)/test-anchors.ds test-anchors.ds
+	python csr2dnskey.py \
+		--csr $(KNOWN_DATA)/$(CSR) \
+		--output $(KEYID).dnskey
+	diff -u $(KNOWN_GOOD)/$(KEYID).dnskey $(KEYID).dnskey
 
 root-anchors.p7s:
 	curl -o $@ https://data.iana.org/root-anchors/root-anchors.p7s
