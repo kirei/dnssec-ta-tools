@@ -140,7 +140,7 @@ def write_out_file(file_name, file_contents):
         fobj = open(file_name, mode=filemode)
         fobj.write(file_contents)
         fobj.close()
-        print("Saved file {}, length {}.".format(file_name, len(file_contents)))
+        print("Saved file {}, length {} octets.".format(file_name, len(file_contents)))
     except:
         die("Could not write out the file {}.".format(file_name))
     return
@@ -298,7 +298,7 @@ def get_valid_trust_anchors(trust_anchors):
                 "than today, so not using this trust anchor.")
             continue
         if this_anchor["validUntil"] == "":
-            print("Trust anchor {}: there was no validUntil attribute, ".format(count),\
+            print("Trust anchor {}: there was no validUntil attribute,".format(count),\
                 "so the validity is OK.")
             valid_trust_anchors.append(this_anchor)
         else:
