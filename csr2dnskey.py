@@ -25,7 +25,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-"""DNSSEC CSR Conversion Tool"""
+"""
+DNSSEC CSR Conversion Tool
+
+This tool extracts a DNSKEY from a Certificate Signing Request as described
+in RFC 7958.
+"""
 
 import sys
 import argparse
