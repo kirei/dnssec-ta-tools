@@ -28,7 +28,7 @@
 """
 DNSSEC Trust Anchor Tool (dnssec_ta_tool.py)
 
-This tool with extract a DNSSEC Trust Anchor from a Trust Anchor XML file
+This tool will extract DNSSEC Trust Anchors from a Trust Anchor XML file
 formatted as described in RFC 7958. Validation of the detached signature
 over the Trust Anchor XML file is NOT performed by this tool.
 """
