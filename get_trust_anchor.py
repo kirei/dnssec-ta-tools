@@ -166,13 +166,13 @@ def dnskey_to_hex_of_hash(dnskey_dict, hash_type):
 
 def fetch_ksk():
     """Return the KSKs, or die if they can't be found in via Google nor the zone file"""
-    print("Fetching via Google...")
+    print("Fetching via Google Public DNS...")
     ksks = fetch_ksk_from_google()
     if ksks is None:
-        print("Fetching via Google failed. Fetching via the root zone file...")
+        print("Fetching via Google Public DNS failed. Fetching via the root zone file...")
         ksks = fetch_ksk_from_zonefile()
         if ksks is None:
-            die("Could not fetch the KSKs from Google nor get the root zone file.")
+            die("Could not fetch the KSKs from Google Public DNS nor get the root zone file.")
     if len(ksks) == 0:
         die("No KSKs were found.")
     return ksks
