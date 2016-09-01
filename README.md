@@ -6,7 +6,7 @@ This repository contains utilities to process DNS trust anchors formatted in XML
 
 ## Example Usage
 
-### Fetch and Verify Root TA
+### Fetch and Verify Root Trust Anchor
 
     python get_trust_anchor.py
 
