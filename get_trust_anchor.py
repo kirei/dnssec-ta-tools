@@ -458,7 +458,7 @@ def main():
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
     export_ksk(matched_ksks, ds_record_filename, dnskey_record_filename)
     # Delete the temporary files unless requested not to
-    if not(opts.local) and not(opts.keep):
+    if not opts.local and not opts.keep:
         for this_file in temp_files:
             if os.path.exists(this_file):
                 try:
