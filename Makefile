@@ -38,7 +38,7 @@ $(VENV3):
 	$(VENV3)/bin/pip install $(MODULES3)
 
 pip3:
-	pip install --user $(MODULES3)
+	pip install $(MODULES3)
 
 demo: $(VENV3) root-anchors.xml
 	$(VENV3)/bin/python dnssec_ta_tool.py --format dnskey --verbose
