@@ -79,13 +79,17 @@ regress3_offline:
 		--output test-anchors.ds
 	diff -u $(KNOWN_GOOD)/test-anchors.ds test-anchors.ds
 
-	python dnssec_ta_tool.py --verbose \
-		--anchors $(ROOT_ANCHORS) --format dnskey \
+	python dnssec_ta_tool.py \
+		--verbose \
+		--format dnskey \
+		--anchors $(ROOT_ANCHORS) \
 		--output root-anchors.dnskey
 	diff -u $(KNOWN_GOOD)/root-anchors.dnskey root-anchors.dnskey
 
-	python dnssec_ta_tool.py --verbose \
-		--anchors $(ROOT_ANCHORS) --format ds \
+	python dnssec_ta_tool.py \
+		--verbose \
+		--format ds \
+		--anchors $(ROOT_ANCHORS) \
 		--output root-anchors.ds
 	diff -u $(KNOWN_GOOD)/root-anchors.ds root-anchors.ds
 
