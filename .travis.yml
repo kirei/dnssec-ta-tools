@@ -2,7 +2,7 @@ language: python
 matrix:
   include:
   - python: "2.7"
-    script: make travis2
+    script: make regress2
   - python: "3.5"
     install: make pip3
-    script: make travis3
+    script: make regress3
