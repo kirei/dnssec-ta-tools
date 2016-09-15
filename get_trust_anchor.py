@@ -47,6 +47,7 @@ trust anchors are still cryptographically validated.
 
 from __future__ import print_function
 
+import argparse
 import base64
 import codecs
 import datetime
@@ -58,9 +59,8 @@ import re
 import struct
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree
-import argparse
-
 
 ICANN_ROOT_CA_CERT = '''
 -----BEGIN CERTIFICATE-----
@@ -140,7 +140,6 @@ def write_out_file(file_name, file_contents):
         fobj = open(file_name, mode=filemode)
         fobj.write(file_contents)
         fobj.close()
-        print("Saved file {}, length {} octets.".format(file_name, len(file_contents)))
     except:
         die("Could not write out the file {}.".format(file_name))
     return
@@ -231,8 +230,7 @@ def validate_detached_signature(contents_filename, signature_filename, ca_filena
         die("When running openssl, the return code was {} ".format(validate_popen.returncode),\
             "and the output was the following.\n{} {}".format(validate_err, validate_out))
     else:
-        print("Validation of the signature in {sig} over the file {cont} succeeded.".format(\
-            sig=signature_filename, cont=contents_filename))
+        print("Validation of the signature over the file succeeded.")
 
 
 def extract_trust_anchors_from_xml(trust_anchor_xml):
@@ -355,6 +353,7 @@ def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
         dnskey_record_contents = ". IN DNSKEY {flags} {proto} {alg} {keyas64}".format(\
             flags=this_matched_ksk["f"], proto=this_matched_ksk["p"],\
             alg=this_matched_ksk["a"], keyas64=this_matched_ksk["k"])
+        print("Writing out {}.".format(dnskey_record_filename))
         write_out_file(dnskey_record_filename, dnskey_record_contents)
         # Write out the DS
         hash_as_hex = dnskey_to_hex_of_hash(this_matched_ksk, "2")  # Always do SHA256
@@ -375,6 +374,7 @@ def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
         ds_record_contents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
             keytag=this_key_tag, alg=this_matched_ksk["a"],\
             sha256ofkey=hash_as_hex)
+        print("Writing out {}.".format(ds_record_filename))
         write_out_file(ds_record_filename, ds_record_contents)
 
 
@@ -382,9 +382,9 @@ def main():
     """Main function"""
 
     # Where the files we create are kept
-    trust_anchor_filename = "root-anchors.xml"
-    signature_filename = "root-anchors.p7s"
-    icann_ca_filename = "icanncacert.pem"
+    trust_anchor_filename = tempfile.mktemp()
+    signature_filename = tempfile.mktemp()
+    icann_ca_filename = tempfile.mktemp()
     temp_files = [trust_anchor_filename, signature_filename, icann_ca_filename]
     dnskey_record_filename = "ksk-as-dnskey.txt"
     ds_record_filename = "ksk-as-ds.txt"
@@ -458,7 +458,10 @@ def main():
     ### Step 7. Write out the trust anchors as a DNSKEY and DS records.
     export_ksk(matched_ksks, ds_record_filename, dnskey_record_filename)
     # Delete the temporary files unless requested not to
-    if not opts.local and not opts.keep:
+    if opts.keep:
+        print("Kept the temporary files: {}".format(" ".join(temp_files)))
+    else:
+        print("Deleting the temporary files.")
         for this_file in temp_files:
             if os.path.exists(this_file):
                 try:
