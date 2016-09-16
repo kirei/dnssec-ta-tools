@@ -382,9 +382,9 @@ def main():
     """Main function"""
 
     # Where the files we create are kept
-    trust_anchor_filename = tempfile.mktemp()
-    signature_filename = tempfile.mktemp()
-    icann_ca_filename = tempfile.mktemp()
+    (_, trust_anchor_filename) = tempfile.mkstemp(prefix="trust_anchor_")
+    (_, signature_filename) = tempfile.mkstemp(prefix="signature_")
+    (_, icann_ca_filename) = tempfile.mkstemp(prefix="icann_ca_")
     temp_files = [trust_anchor_filename, signature_filename, icann_ca_filename]
     dnskey_record_filename = "ksk-as-dnskey.txt"
     ds_record_filename = "ksk-as-ds.txt"
