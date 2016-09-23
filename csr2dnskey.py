@@ -49,7 +49,7 @@ def get_ds_rdata(x509name):
     """Get DS record from X509Name"""
     components = dict(x509name.get_components())
     ds_pattern = re.compile("^(.+) IN DS (.+)$")
-    for attr, value in components.items():
+    for _, value in components.items():
         decoded_value = value.decode('UTF-8')
         match = ds_pattern.match(decoded_value)
         if match:
