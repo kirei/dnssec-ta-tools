@@ -8,7 +8,8 @@ setup(
     description='DNSSEC Trust Anchor Tools',
     classifiers=[
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3 :: Only'
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3'
     ],
     url='https://github.com/kirei/dnssec-ta-tools',
     scripts=[
