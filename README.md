@@ -14,7 +14,7 @@ This repository contains utilities to process DNS trust anchors formatted in XML
 
 ### Fetch and Verify Root Trust Anchor
 
-    python get_trust_anchor/get_trust_anchor.py
+    python get_trust_anchor.py
 
 (_Compatible with both Python 2.7 and Python 3.x._)
 
