@@ -1,5 +1,9 @@
 all:
 
+pip3:
+	pip install -r csr2dnskey/requirements.txt
+	pip install -r dnssec_ta_tool/requirements.txt
+
 regress2_offline:
 	(cd get_trust_anchor; $(MAKE) $@)
 
