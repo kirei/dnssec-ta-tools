@@ -4,11 +4,7 @@ PYTHON3=	python3.5
 DISTDIRS=	*.egg-info build dist
 TMPFILES=	K*.{dnskey,ds}
 
-KNOWN_DATA=	../regress/known_data
-KNOWN_GOOD=	../regress/known_good
-
 KEYID=		Kjqmt7v
-CSR=		$(KNOWN_DATA)/$(KEYID).csr
 
 
 all:
@@ -31,9 +27,9 @@ test: $(VENV3)
 regress3_offline:
 	python -m py_compile csr2dnskey.py
 	python csr2dnskey.py \
-		--csr $(CSR) \
+		--csr regress/$(KEYID).csr \
 		--output $(KEYID).dnskey
-	diff -u $(KNOWN_GOOD)/$(KEYID).dnskey $(KEYID).dnskey
+	diff -u regress/$(KEYID).dnskey $(KEYID).dnskey
 
 clean:
 	rm -fr $(DISTDIRS)
