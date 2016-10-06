@@ -1,0 +1,5 @@
+pylint
+dnspython
+pycryptodomex
+pyOpenSSL
+wheel

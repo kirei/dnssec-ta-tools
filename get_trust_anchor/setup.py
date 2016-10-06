@@ -3,25 +3,16 @@
 from setuptools import setup
 
 setup(
-    name='dnssec_ta_tools',
+    name='get_trust_anchor',
     version='0.0',
     description='DNSSEC Trust Anchor Tools',
     classifiers=[
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3 :: Only'
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3'
     ],
     url='https://github.com/kirei/dnssec-ta-tools',
     scripts=[
-        'csr2dnskey.py',
-        'dnssec_ta_tool.py',
         'get_trust_anchor.py'
-    ],
-    install_requires=[
-        'setuptools',
-        'iso8601',
-        'xmltodict',
-        'dnspython'
-        'pycryptodomex',
-        'pyOpenSSL'
     ]
 )
