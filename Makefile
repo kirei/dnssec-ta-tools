@@ -1,19 +1,13 @@
-SCRIPT2=	get_trust_anchor.py
-SCRIPT3=	get_trust_anchor.py dnssec_ta_tool.py csr2dnskey.py
+SCRIPT=		dnssec_ta_tool.py csr2dnskey.py
 
-VENV2=		venv2
 VENV3=		venv3
 
 PYTHON2=	python2.7
 PYTHON3=	python3.5
 
-MODULES3=	pylint iso8601 xmltodict dnspython pycryptodomex pyOpenSSL
-
 TMPFILES=	K*.{dnskey,ds} \
 		test-anchors.{ds,dnskey} \
-		root-anchors.{ds,dnskey} \
-		ksk-as-{dnskey,ds}.txt root.zone \
-		*.backup_*
+		root-anchors.{ds,dnskey}
 
 KNOWN_DATA=	regress/known_data
 KNOWN_GOOD=	regress/known_good
@@ -29,17 +23,11 @@ all:
 lint:
 	$(VENV3)/bin/pylint --reports=no $(SCRIPT3)
 
-venv: $(VENV2) $(VENV3)
-
-$(VENV2):
-	virtualenv -p $(PYTHON2) $(VENV2)
+venv: $(VENV3)
 
 $(VENV3):
 	virtualenv -p $(PYTHON3) $(VENV3)
-	$(VENV3)/bin/pip install $(MODULES3)
-
-pip3:
-	pip install $(MODULES3)
+	$(VENV3)/bin/pip install -r requirements.txt
 
 test: test2 test3
 
@@ -50,18 +38,17 @@ test3: $(VENV3)
 	(. $(VENV3)/bin/activate; $(MAKE) regress3_offline regress3_online)
 
 regress2_offline:
-	python -m py_compile get_trust_anchor.py
+	(cd get_trust_anchor; $(MAKE) $@)
+	python -m py_compile get_trust_anchor/get_trust_anchor.py
 
 regress2_online:
-	python get_trust_anchor.py
-	diff -u $(KNOWN_GOOD)/ksk-as-dnskey.txt ksk-as-dnskey.txt
-	diff -u $(KNOWN_GOOD)/ksk-as-ds.txt ksk-as-ds.txt
+	(cd get_trust_anchor; $(MAKE) $@)
 
 regress3_online: regress2_online
-	python -m py_compile get_trust_anchor.py
+	(cd get_trust_anchor; $(MAKE) $@)
 
 regress3_offline:
-	python -m py_compile get_trust_anchor.py
+	(cd get_trust_anchor; $(MAKE) $@)
 	python -m py_compile dnssec_ta_tool.py
 	python -m py_compile csr2dnskey.py
 
@@ -103,3 +90,4 @@ realclean: clean
 
 clean:
 	rm -f $(TMPFILES)
+	rm -fr __pycache__ *.pyc
