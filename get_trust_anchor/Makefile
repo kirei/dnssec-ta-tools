@@ -6,11 +6,6 @@ PYTHON3=	python3.5
 
 DISTDIRS=	*.egg-info build dist
 TMPFILES=	ksk-as-{dnskey,ds}.txt \
-		*.backup_*
-
-KNOWN_DATA=	../regress/known_data
-KNOWN_GOOD=	../regress/known_good
-
 
 
 all:
@@ -42,8 +37,8 @@ regress2_offline:
 
 regress2_online:
 	python get_trust_anchor.py
-	diff -u $(KNOWN_GOOD)/ksk-as-dnskey.txt ksk-as-dnskey.txt
-	diff -u $(KNOWN_GOOD)/ksk-as-ds.txt ksk-as-ds.txt
+	diff -u regress/ksk-as-dnskey.txt ksk-as-dnskey.txt
+	diff -u regress/ksk-as-ds.txt ksk-as-ds.txt
 
 regress3_online: regress2_online
 	python -m py_compile get_trust_anchor.py
