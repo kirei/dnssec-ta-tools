@@ -1,6 +1,5 @@
 pylint
-iso8601
-xmltodict
 dnspython
 pycryptodomex
 pyOpenSSL
+wheel

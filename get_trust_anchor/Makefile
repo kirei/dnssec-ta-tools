@@ -5,7 +5,6 @@ PYTHON2=	python2.7
 PYTHON3=	python3.5
 
 DISTDIRS=	*.egg-info build dist
-
 TMPFILES=	ksk-as-{dnskey,ds}.txt \
 		*.backup_*
 
@@ -16,6 +15,12 @@ KNOWN_GOOD=	../regress/known_good
 
 all:
 
+lint:
+	$(VENV3)/bin/pylint --reports=no *.py
+
+wheel:
+	python setup.py bdist_wheel
+
 venv: $(VENV2) $(VENV3)
 
 $(VENV2):
@@ -23,9 +28,6 @@ $(VENV2):
 
 $(VENV3):
 	virtualenv -p $(PYTHON3) $(VENV3)
-
-wheel:
-	python setup.py bdist_wheel
 
 test: test2 test3
 
