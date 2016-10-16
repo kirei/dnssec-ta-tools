@@ -355,7 +355,7 @@ def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
             flags=this_matched_ksk["f"], proto=this_matched_ksk["p"],\
             alg=this_matched_ksk["a"], keyas64=this_matched_ksk["k"])
         print("Writing out {}.".format(dnskey_record_filename))
-        write_out_file(dnskey_record_filename, dnskey_record_contents)
+        write_out_file(dnskey_record_filename, dnskey_record_contents + "\n")
         # Write out the DS
         hash_as_hex = dnskey_to_hex_of_hash(this_matched_ksk, "2")  # Always do SHA256
         # Calculate the keytag
@@ -376,7 +376,7 @@ def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
             keytag=this_key_tag, alg=this_matched_ksk["a"],\
             sha256ofkey=hash_as_hex)
         print("Writing out {}.".format(ds_record_filename))
-        write_out_file(ds_record_filename, ds_record_contents)
+        write_out_file(ds_record_filename, ds_record_contents + "\n")
 
 
 def main():
