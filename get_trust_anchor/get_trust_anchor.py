@@ -372,11 +372,11 @@ def export_ksk(valid_ksks, ds_record_filename, dnskey_record_filename):
                 accumulator += this_byte
         this_key_tag = ((accumulator & 0xFFFF) + (accumulator>>16)) & 0xFFFF
         print("The key tag for this KSK is {}".format(this_key_tag))
-        ds_record_contents = ". IN DS {keytag} {alg} 2 {sha256ofkey}".format(\
+        ds_record_contents = ". IN DS {keytag} {alg} 2 {sha256ofkey}\n".format(\
             keytag=this_key_tag, alg=this_matched_ksk["a"],\
             sha256ofkey=hash_as_hex)
         print("Writing out {}.".format(ds_record_filename))
-        write_out_file(ds_record_filename, ds_record_contents + "\n")
+        write_out_file(ds_record_filename, ds_record_contents)
 
 
 def main():
