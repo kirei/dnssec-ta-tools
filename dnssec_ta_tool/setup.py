@@ -10,7 +10,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3 :: Only'
     ],
-    url='https://github.com/kirei/dnssec-ta-tools',
+    url='https://github.com/kirei/dnssec-ta-tools/dnssec_ta_tool',
     scripts=[
         'dnssec_ta_tool.py',
     ],
