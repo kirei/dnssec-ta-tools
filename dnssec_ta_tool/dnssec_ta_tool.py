@@ -121,9 +121,10 @@ def dnskey_from_ds_rrset(ds_rrset, verbose):
         dnskey_rdata = answer_rr
 
         for ds_rdata in ds_rrset:
+            ds_algo = ds_digest_type_as_text(ds_rdata.digest_type)
             dnskey_as_ds = dns.dnssec.make_ds(name=zone,
                                               key=dnskey_rdata,
-                                              algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
+                                              algorithm=ds_algo)
             if dnskey_as_ds == ds_rdata:
                 if verbose:
                     emit_info('DNSKEY {} found'.format(ds_rdata.key_tag))
@@ -141,7 +142,7 @@ def bind_format_key(format_str, dnskey_rrset):
                                 dnskey_rr.flags,
                                 dnskey_rr.protocol,
                                 dnskey_rr.algorithm,
-                                base64.b64encode(dnskey_rr.key).decode('utf8')))
+                                base64.b64encode(dnskey_rr.key).decode()))
 
 
 def bind_trusted_keys(dnskey_rrset):
@@ -175,7 +176,7 @@ def print_ds_rrset_without_ttl(ds_rrset):
                                          ds_rr.key_tag,
                                          ds_rr.algorithm,
                                          ds_rr.digest_type,
-                                         base64.b64encode(ds_rr.digest).decode('utf8')))
+                                         base64.b64encode(ds_rr.digest).decode()))
 
 
 def print_dnskey_rrset_without_ttl(dnskey_rrset):
@@ -185,12 +186,13 @@ def print_dnskey_rrset_without_ttl(dnskey_rrset):
                                              dnskey_rr.flags,
                                              dnskey_rr.protocol,
                                              dnskey_rr.algorithm,
-                                             base64.b64encode(dnskey_rr.key).decode('utf8')))
+                                             base64.b64encode(dnskey_rr.key).decode()))
 
 
 def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
+    formats = ['ds', 'dnskey', 'bind-trusted', 'bind-managed']
     parser.add_argument("--verbose",
                         dest='verbose',
                         action='store_true',
@@ -204,15 +206,15 @@ def main():
                         dest='format',
                         metavar='format',
                         default='ds',
-                        choices=['ds', 'dnskey', 'bind-trusted', 'bind-managed'],
-                        help='output format (ds|dnskey|bind-trusted|bind-managed)')
+                        choices=formats,
+                        help='output format ({})'.format('|'.join(formats)))
     parser.add_argument("--output",
                         dest='output',
                         metavar='filename',
                         help='output file (stdout)')
     args = parser.parse_args()
 
-    with open(args.anchors) as anchors_fd:
+    with open(args.anchors, 'rt') as anchors_fd:
         doc = xmltodict.parse(anchors_fd.read())
 
     zone = doc['TrustAnchor']['Zone']
@@ -227,7 +229,7 @@ def main():
         dnskey_rrset = dnskey_from_ds_rrset(ds_rrset, verbose=args.verbose)
 
     if args.output:
-        output_fd = open(args.output, 'w')
+        output_fd = open(args.output, 'wt')
         old_stdout = sys.stdout
         sys.stdout = output_fd
 
