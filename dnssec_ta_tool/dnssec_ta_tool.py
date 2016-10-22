@@ -192,53 +192,57 @@ def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
     parser.add_argument("--verbose",
+                        dest='verbose',
                         action='store_true',
                         help='verbose output')
     parser.add_argument("--anchors",
+                        dest='anchors',
                         metavar='filename',
                         default=DEFAULT_ANCHORS,
                         help='trust anchor file (root-anchors.xml)')
     parser.add_argument("--format",
+                        dest='format',
                         metavar='format',
                         default='ds',
                         choices=['ds', 'dnskey', 'bind-trusted', 'bind-managed'],
                         help='output format (ds|dnskey|bind-trusted|bind-managed)')
     parser.add_argument("--output",
+                        dest='output',
                         metavar='filename',
                         help='output file (stdout)')
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
 
-    with open(args['anchors']) as anchors_fd:
+    with open(args.anchors) as anchors_fd:
         doc = xmltodict.parse(anchors_fd.read())
 
     zone = doc['TrustAnchor']['Zone']
     digests = doc['TrustAnchor']['KeyDigest']
 
     if isinstance(digests, list):
-        ds_rrset = get_trust_anchors_as_ds(zone, digests, verbose=args['verbose'])
+        ds_rrset = get_trust_anchors_as_ds(zone, digests, verbose=args.verbose)
     else:
-        ds_rrset = get_trust_anchors_as_ds(zone, [digests], verbose=args['verbose'])
+        ds_rrset = get_trust_anchors_as_ds(zone, [digests], verbose=args.verbose)
 
-    if args['format'] != 'ds':
-        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset, verbose=args['verbose'])
+    if args.format != 'ds':
+        dnskey_rrset = dnskey_from_ds_rrset(ds_rrset, verbose=args.verbose)
 
-    if args['output']:
-        output_fd = open(args['output'], 'w')
+    if args.output:
+        output_fd = open(args.output, 'w')
         old_stdout = sys.stdout
         sys.stdout = output_fd
 
-    if args['format'] == 'ds':
+    if args.format == 'ds':
         print_ds_rrset_without_ttl(ds_rrset)
-    elif args['format'] == 'dnskey':
+    elif args.format == 'dnskey':
         print_dnskey_rrset_without_ttl(dnskey_rrset)
-    elif args['format'] == 'bind-trusted':
+    elif args.format == 'bind-trusted':
         bind_trusted_keys(dnskey_rrset)
-    elif args['format'] == 'bind-managed':
+    elif args.format == 'bind-managed':
         bind_managed_keys(dnskey_rrset)
     else:
         raise Exception('Invalid output format')
 
-    if args['output']:
+    if args.output:
         sys.stdout = old_stdout
         output_fd.close()
 
