@@ -101,19 +101,19 @@ def get_rsa_b64_from_der(public_key_der):
 
 def main():
     """ Main function"""
-    parser = argparse.ArgumentParser(description='DNSSEC Trust Anchor Tool')
-    parser.add_argument("--verbose",
-                        action='store_true',
-                        help='verbose output')
+    parser = argparse.ArgumentParser(description='csr2dnskey')
     parser.add_argument("--csr",
+                        dest='csr',
                         metavar='filename',
-                        help='CSR anchor file (root-anchors.xml)')
+                        help='CSR anchor file (root-anchors.xml)',
+                        required=True)
     parser.add_argument("--output",
+                        dest='output',
                         metavar='filename',
                         help='output file (stdout)')
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
 
-    with open(args['csr'], "rb") as csr_fd:
+    with open(args.csr, "rb") as csr_fd:
         csr = csr_fd.read()
 
     req = load_certificate_request(FILETYPE_ASN1, csr)
@@ -133,15 +133,15 @@ def main():
     else:
         raise Exception('Unsupported public key algorithm')
 
-    if args['output']:
-        output_fd = open(args['output'], 'w')
+    if args.output:
+        output_fd = open(args.output, 'w')
         old_stdout = sys.stdout
         sys.stdout = output_fd
 
     if ds_rdata == dnskey_as_ds:
         print('{} IN DNSKEY {}'.format(ds_origin, dnskey_rdata))
 
-    if args['output']:
+    if args.output:
         sys.stdout = old_stdout
         output_fd.close()
 
