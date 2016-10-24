@@ -36,6 +36,7 @@ import sys
 import argparse
 import re
 import logging
+import binascii
 import base64
 import dns.dnssec
 import dns.rdata
@@ -100,6 +101,12 @@ def get_rsa_b64_from_der(public_key_der):
     return base64.b64encode(keydata)
 
 
+def debug_hexlify(message: str, data: bytes, logger=logging) -> None:
+    """Log hexdump of data"""
+    hexlifystr = binascii.hexlify(data).decode('utf8')
+    logger.debug("%s (%d bytes): %s", message, len(data), hexlifystr)
+
+
 def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='csr2dnskey')
@@ -148,17 +155,23 @@ def main():
     subject = req.get_subject()
     logging.info("CSR Subject Name: %s", subject)
     (ds_origin, ds_rdata) = get_ds_rdata(subject)
+    logging.debug("CSR DS Origin: %s", ds_origin)
+    logging.debug("CSR DS RDATA: %s", ds_rdata)
     public_key_der = dump_publickey(FILETYPE_ASN1, req.get_pubkey())
+    debug_hexlify("CSR Public Key", public_key_der)
 
     if get_algo_class_from_ds(ds_rdata) == 'RSA':
         b64 = get_rsa_b64_from_der(public_key_der).decode('utf8')
+        logging.debug("CSR Public RSA Key (Base64): %s", b64)
         rdata_str = '257 3 {} {}'.format(ds_rdata.algorithm, b64)
         dnskey_rdata = dns.rdata.from_text(rdclass=dns.rdataclass.IN,
                                            rdtype=dns.rdatatype.DNSKEY,
                                            tok=rdata_str)
+        logging.debug("DNSKEY RDATA: %s", dnskey_rdata)
         dnskey_as_ds = dns.dnssec.make_ds(name=ds_origin,
                                           key=dnskey_rdata,
                                           algorithm=ds_digest_type_as_text(ds_rdata.digest_type))
+        logging.debug("DNSKEY as DS RDATA: %s", dnskey_as_ds)
     else:
         raise Exception('Unsupported public key algorithm')
 
