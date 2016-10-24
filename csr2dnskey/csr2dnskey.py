@@ -35,6 +35,7 @@ in RFC 7958.
 import sys
 import argparse
 import re
+import logging
 import base64
 import dns.dnssec
 import dns.rdata
@@ -111,13 +112,21 @@ def main():
                         dest='output',
                         metavar='filename',
                         help='output file (stdout)')
+    parser.add_argument('--debug',
+                        dest='debug',
+                        action='store_true',
+                        help="Enable debugging")
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     with open(args.csr, "rb") as csr_fd:
         csr = csr_fd.read()
 
     req = load_certificate_request(FILETYPE_ASN1, csr)
     subject = req.get_subject()
+    logging.info("CSR Subject Name: %s", subject)
     (ds_origin, ds_rdata) = get_ds_rdata(subject)
     public_key_der = dump_publickey(FILETYPE_ASN1, req.get_pubkey())
 
