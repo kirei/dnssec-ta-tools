@@ -153,7 +153,7 @@ def main():
 
     req = load_certificate_request(FILETYPE_ASN1, csr)
     subject = req.get_subject()
-    logging.info("CSR Subject Name: %s", subject)
+    logging.info("CSR Subject: %s", subject)
     (ds_origin, ds_rdata) = get_ds_rdata(subject)
     logging.debug("CSR DS Origin: %s", ds_origin)
     logging.debug("CSR DS RDATA: %s", ds_rdata)
