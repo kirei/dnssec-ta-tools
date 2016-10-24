@@ -168,7 +168,7 @@ def main():
         sys.stdout = output_fd
 
     if args.output_ds:
-        print('{} IN DS {}'.format(ds_origin, ds_rdata))        
+        print('{} IN DS {}'.format(ds_origin, ds_rdata))
 
     if ds_rdata == dnskey_as_ds and args.output_dnskey:
         print('{} IN DNSKEY {}'.format(ds_origin, dnskey_rdata))
