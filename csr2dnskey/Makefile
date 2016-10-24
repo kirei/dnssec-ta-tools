@@ -30,6 +30,11 @@ regress3_offline:
 		--csr regress/$(KEYID).csr \
 		--output $(KEYID).dnskey
 	diff -u regress/$(KEYID).dnskey $(KEYID).dnskey
+	python csr2dnskey.py \
+		--csr regress/$(KEYID).csr \
+		--no-dnskey --ds \
+		--output $(KEYID).ds
+	diff -u regress/$(KEYID).ds $(KEYID).ds
 
 clean:
 	rm -fr $(DISTDIRS)
