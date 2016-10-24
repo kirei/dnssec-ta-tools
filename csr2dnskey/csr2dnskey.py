@@ -116,6 +116,26 @@ def main():
                         dest='debug',
                         action='store_true',
                         help="Enable debugging")
+    group_dnskey = parser.add_mutually_exclusive_group()
+    group_dnskey.add_argument('--dnskey',
+                              dest='output_dnskey',
+                              action='store_true',
+                              default=True,
+                              help="Output DNSKEY RR")
+    group_dnskey.add_argument('--no-dnskey',
+                              dest='output_dnskey',
+                              action='store_false',
+                              help="Don't output DNSKEY RR")
+    group_ds = parser.add_mutually_exclusive_group()
+    group_ds.add_argument('--ds',
+                          dest='output_ds',
+                          action='store_true',
+                          default=False,
+                          help="Output DS RR")
+    group_ds.add_argument('--no-ds',
+                          dest='output_ds',
+                          action='store_false',
+                          help="Don't output DS RR")
     args = parser.parse_args()
 
     if args.debug:
@@ -147,7 +167,10 @@ def main():
         old_stdout = sys.stdout
         sys.stdout = output_fd
 
-    if ds_rdata == dnskey_as_ds:
+    if args.output_ds:
+        print('{} IN DS {}'.format(ds_origin, ds_rdata))        
+
+    if ds_rdata == dnskey_as_ds and args.output_dnskey:
         print('{} IN DNSKEY {}'.format(ds_origin, dnskey_rdata))
 
     if args.output:
