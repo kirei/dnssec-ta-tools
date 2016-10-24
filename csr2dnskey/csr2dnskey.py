@@ -162,6 +162,9 @@ def main():
     else:
         raise Exception('Unsupported public key algorithm')
 
+    if ds_rdata != dnskey_as_ds:
+        raise Exception('DNSKEY/DS mismatch')
+
     if args.output:
         output_fd = open(args.output, 'w')
         old_stdout = sys.stdout
@@ -170,7 +173,7 @@ def main():
     if args.output_ds:
         print('{} IN DS {}'.format(ds_origin, ds_rdata))
 
-    if ds_rdata == dnskey_as_ds and args.output_dnskey:
+    if args.output_dnskey:
         print('{} IN DNSKEY {}'.format(ds_origin, dnskey_rdata))
 
     if args.output:
