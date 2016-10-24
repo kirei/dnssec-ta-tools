@@ -32,6 +32,7 @@ This tool extracts a DNSKEY from a Certificate Signing Request as described
 in RFC 7958.
 """
 
+from typing import Tuple
 import sys
 import argparse
 import re
@@ -47,7 +48,7 @@ import Cryptodome.Util.number
 RR_OID = "1.3.6.1.4.1.1000.53"
 
 
-def get_ds_rdata(x509name):
+def get_ds_rdata(x509name) -> Tuple[str, str]:
     """Get DS record from X509Name"""
     components = dict(x509name.get_components())
     ds_pattern = re.compile("^(.+) IN DS (.+)$")
@@ -63,7 +64,7 @@ def get_ds_rdata(x509name):
             return (origin_str, rdata)
 
 
-def get_algo_class_from_ds(ds_rdata):
+def get_algo_class_from_ds(ds_rdata) -> str:
     """Get algorithm class from DS rdata"""
     if (ds_rdata.algorithm == dns.dnssec.RSAMD5 or
             ds_rdata.algorithm == dns.dnssec.RSASHA1 or
@@ -80,7 +81,7 @@ def get_algo_class_from_ds(ds_rdata):
     raise Exception('Unsupported DS algorithm family')
 
 
-def ds_digest_type_as_text(digest_type):
+def ds_digest_type_as_text(digest_type: int) -> str:
     """Get DS digest type as mnemonic"""
     digest_types = {
         1: 'SHA1',
@@ -89,7 +90,7 @@ def ds_digest_type_as_text(digest_type):
     return digest_types.get(digest_type)
 
 
-def get_rsa_b64_from_der(public_key_der):
+def get_rsa_b64_from_der(public_key_der: bytes) -> bytes:
     """Get base64 encoded RSA from public key DER sequence"""
     public_key_rsa = RSA.importKey(public_key_der)
     rsa_bytes_n = Cryptodome.Util.number.long_to_bytes(public_key_rsa.n)
@@ -103,7 +104,7 @@ def get_rsa_b64_from_der(public_key_der):
 
 def debug_hexlify(message: str, data: bytes, logger=logging) -> None:
     """Log hexdump of data"""
-    hexlifystr = binascii.hexlify(data).decode('utf8')
+    hexlifystr = binascii.hexlify(data).decode()
     logger.debug("%s (%d bytes): %s", message, len(data), hexlifystr)
 
 
@@ -161,7 +162,7 @@ def main():
     debug_hexlify("CSR Public Key", public_key_der)
 
     if get_algo_class_from_ds(ds_rdata) == 'RSA':
-        b64 = get_rsa_b64_from_der(public_key_der).decode('utf8')
+        b64 = get_rsa_b64_from_der(public_key_der).decode()
         logging.debug("CSR Public RSA Key (Base64): %s", b64)
         rdata_str = '257 3 {} {}'.format(ds_rdata.algorithm, b64)
         dnskey_rdata = dns.rdata.from_text(rdclass=dns.rdataclass.IN,
