@@ -2,7 +2,13 @@
 
 This repository contains utilities to process DNS trust anchors formatted in XML.
 
-[![Build Status](https://api.travis-ci.org/kirei/dnssec-ta-tools.png)](https://travis-ci.org/kirei/dnssec-ta-tools)
+Vital parts of this repository has moved:
+
+- [get_trust_anchor](https://github.com/kirei/get_trust_anchor/)
+- [csr2dnskey](https://github.com/kirei/csr2dnskey/)
+
+
+---
 
 ## Programs
 
